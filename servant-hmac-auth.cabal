@@ -24,19 +24,24 @@ library
   hs-source-dirs:      src
   exposed-modules:     Servant.Auth.Hmac
 
+  build-depends:       base >= 4.11 && < 5
+                     , base64-bytestring ^>= 1.0
+                     , bytestring ^>= 0.10
+                     , case-insensitive ^>= 1.2
+                     , cryptonite ^>= 0.25
+                     , http-types ^>= 0.12
+                     , memory ^>= 0.14.14
+                     , wai ^>= 3.2
+
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
                        -Wincomplete-record-updates
                        -Wcompat
                        -Widentities
                        -Wredundant-constraints
-                       -fhide-source-paths
                        -Wmissing-export-lists
                        -Wpartial-fields
-  build-depends:       base >= 4.11 && < 5
-                     , bytestring ^>= 0.10
-                     , cryptonite ^>= 0.25
-                     , memory ^>= 0.14.14
+                       -fhide-source-paths
 
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
