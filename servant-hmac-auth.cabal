@@ -22,8 +22,8 @@ source-repository head
 
 library
   hs-source-dirs:      src
-  exposed-modules:     ServantHmacAuth
-                       
+  exposed-modules:     Servant.Auth.Hmac
+
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
                        -Wincomplete-record-updates
@@ -33,8 +33,8 @@ library
                        -fhide-source-paths
                        -Wmissing-export-lists
                        -Wpartial-fields
-  build-depends:       base
-                     
+  build-depends:       base >= 4.11 && < 5
+
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
@@ -62,7 +62,7 @@ test-suite servant-hmac-auth-test
                        -Wpartial-fields
   build-depends:       base
                      , servant-hmac-auth
-                     
+
   default-language:    Haskell2010
   default-extensions:  DeriveGeneric
                        GeneralizedNewtypeDeriving
@@ -71,4 +71,3 @@ test-suite servant-hmac-auth-test
                        RecordWildCards
                        ScopedTypeVariables
                        TypeApplications
-
