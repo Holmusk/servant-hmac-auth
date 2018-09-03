@@ -1,0 +1,74 @@
+cabal-version:       1.24
+name:                servant-hmac-auth
+version:             0.0.0
+description:         Servant authentication with HMAC
+synopsis:            Servant authentication with HMAC
+homepage:            https://github.com/holmusk/servant-hmac-auth
+bug-reports:         https://github.com/holmusk/servant-hmac-auth/issues
+license:             MIT
+license-file:        LICENSE
+author:              Holmusk
+maintainer:          tech@holmusk.com
+copyright:           2018 Holmusk
+category:            Web, Cryptography
+build-type:          Simple
+extra-doc-files:     README.md
+                   , CHANGELOG.md
+tested-with:         GHC == 8.4.3
+
+source-repository head
+  type:                git
+  location:            https://github.com/holmusk/servant-hmac-auth.git
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     ServantHmacAuth
+                       
+  ghc-options:         -Wall
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+  build-depends:       base
+                     
+  default-language:    Haskell2010
+  default-extensions:  DeriveGeneric
+                       GeneralizedNewtypeDeriving
+                       LambdaCase
+                       OverloadedStrings
+                       RecordWildCards
+                       ScopedTypeVariables
+                       TypeApplications
+
+test-suite servant-hmac-auth-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+  build-depends:       base
+                     , servant-hmac-auth
+                     
+  default-language:    Haskell2010
+  default-extensions:  DeriveGeneric
+                       GeneralizedNewtypeDeriving
+                       LambdaCase
+                       OverloadedStrings
+                       RecordWildCards
+                       ScopedTypeVariables
+                       TypeApplications
+
