@@ -136,7 +136,7 @@ signRequest
     -> IO Request  -- ^ Signed request
 signRequest signer sk req = do
     signature <- requestSignature signer sk req
-    let authHead = ("Authentication", unSignature signature)
+    let authHead = (authHeaderName, "HMAC " <> unSignature signature)
     pure req
         { requestHeaders = authHead : requestHeaders req
         }
