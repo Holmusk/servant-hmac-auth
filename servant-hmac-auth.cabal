@@ -31,6 +31,9 @@ library
                      , cryptonite ^>= 0.25
                      , http-types ^>= 0.12
                      , memory ^>= 0.14.14
+                     , mtl ^>= 2.2.2
+                     , servant ^>= 0.14.1
+                     , servant-server ^>= 0.14.1
                      , wai ^>= 3.2
 
   ghc-options:         -Wall

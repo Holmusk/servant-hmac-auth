@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 -- | Signing functions.
 
@@ -16,8 +18,13 @@ module Servant.Auth.Hmac
        , requestSignature
        , signRequest
        , verifyRequestHmac
+
+         -- * Servant
+       , hmacAuthHandler
        ) where
 
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (liftIO)
 import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
@@ -29,6 +36,9 @@ import Data.Maybe (fromMaybe)
 import Network.HTTP.Types (Header, HeaderName)
 import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
                     requestHeaders, requestMethod)
+import Servant.API (AuthProtect)
+import Servant.Server (Handler, err401, errBody)
+import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
 
 import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
@@ -203,3 +213,22 @@ extractOn p l =
     in case uncons after of
         Nothing      -> (Nothing, l)
         Just (x, xs) -> (Just x, before ++ xs)
+
+----------------------------------------------------------------------------
+-- Servant
+----------------------------------------------------------------------------
+
+type HmacAuth = AuthProtect "hmac-auth"
+
+type instance AuthServerData HmacAuth = ()
+
+hmacAuthHandler
+    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
+    -> AuthHandler Request ()
+hmacAuthHandler signer sk = mkAuthHandler handler
+  where
+    handler :: Request -> Handler ()
+    handler req = liftIO (verifyRequestHmac signer sk req) >>= \case
+        True  -> pure ()
+        False -> throwError $ err401 { errBody = "HMAC Auth failed." }
