@@ -21,10 +21,9 @@ import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
 import Crypto.MAC.HMAC (HMAC (hmacGetDigest), hmac)
-import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import Data.CaseInsensitive (foldedCase)
-import Data.List (sort)
+import Data.List (sort, uncons)
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Types (Header, HeaderName)
 import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
@@ -123,9 +122,18 @@ signRequest signer sk = fmap (signer sk) . createStringToSign
         normalize :: Header -> ByteString
         normalize (name, value) = foldedCase name <> value
 
+{- | This function takes signing function @signer@ and secret key and expects
+that given 'Request' has header:
+
+@
+Authentication: HMAC <signature>
+@
+
+It checks whether @<signature>@ is true request signature.
+-}
 verifyRequestHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey
+    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
     -> Request
     -> IO Bool
 verifyRequestHmac signer sk signedReq = case unsignedRequest of
@@ -163,12 +171,16 @@ getRequestBody request = BS.concat <$> getChunks
         then pure []
         else (chunk:) <$> getChunks
 
--- | Removes and returns first element from list that satisfies given predicate.
-extractOn :: forall a . (a -> Bool) -> [a] -> (Maybe a, [a])
-extractOn p = go
-  where
-    go :: [a] -> (Maybe a, [a])
-    go [] = (Nothing, [])
-    go (x:xs)
-        | p x       = (Just x, xs)
-        | otherwise = second (x:) (go xs)
+{- | Removes and returns first element from list that satisfies given predicate.
+
+>>> extractOn (== 3) [1..5]
+(Just 3, [1,2,4,5])
+>>> extractOn (== 3) [5..10]
+(Nothing,[5,6,7,8,9,10])
+-}
+extractOn :: (a -> Bool) -> [a] -> (Maybe a, [a])
+extractOn p l =
+    let (before, after) = break p l
+    in case uncons after of
+        Nothing      -> (Nothing, l)
+        Just (x, xs) -> (Just x, before ++ xs)
