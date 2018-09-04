@@ -13,6 +13,7 @@ module Servant.Auth.Hmac
        , signSHA256
 
          -- ** Request signing
+       , requestSignature
        , signRequest
        , verifyRequestHmac
        ) where
@@ -101,12 +102,12 @@ hostfoo.bar.com
 user-agentMozilla/5.0
 @
 -}
-signRequest
+requestSignature
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key to use
     -> Request  -- ^ Request to sign
     -> IO Signature
-signRequest signer sk = fmap (signer sk) . createStringToSign
+requestSignature signer sk = fmap (signer sk) . createStringToSign
   where
     createStringToSign :: Request -> IO ByteString
     createStringToSign req = getRequestBody req >>= \body -> pure $ BS.intercalate "\n"
@@ -121,6 +122,24 @@ signRequest signer sk = fmap (signer sk) . createStringToSign
       where
         normalize :: Header -> ByteString
         normalize (name, value) = foldedCase name <> value
+
+{- | Adds signed header to the request.
+
+@
+Authentication: HMAC <signature>
+@
+-}
+signRequest
+    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
+    -> Request  -- ^ Original request
+    -> IO Request  -- ^ Signed request
+signRequest signer sk req = do
+    signature <- requestSignature signer sk req
+    let authHead = (authHeaderName, "HMAC " <> unSignature signature)
+    pure req
+        { requestHeaders = authHead : requestHeaders req
+        }
 
 {- | This function takes signing function @signer@ and secret key and expects
 that given 'Request' has header:
@@ -138,7 +157,7 @@ verifyRequestHmac
     -> IO Bool
 verifyRequestHmac signer sk signedReq = case unsignedRequest of
     Nothing         -> pure False
-    Just (req, sig) -> (sig ==) <$> signRequest signer sk req
+    Just (req, sig) -> (sig ==) <$> requestSignature signer sk req
   where
     -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
     unsignedRequest :: Maybe (Request, Signature)
