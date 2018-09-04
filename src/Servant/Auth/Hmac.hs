@@ -14,17 +14,19 @@ module Servant.Auth.Hmac
 
          -- ** Request signing
        , signRequest
+       , verifyRequestHmac
        ) where
 
 import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
 import Crypto.MAC.HMAC (HMAC (hmacGetDigest), hmac)
+import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import Data.CaseInsensitive (foldedCase)
 import Data.List (sort)
 import Data.Maybe (fromMaybe)
-import Network.HTTP.Types (Header)
+import Network.HTTP.Types (Header, HeaderName)
 import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
                     requestHeaders, requestMethod)
 
@@ -44,7 +46,7 @@ newtype SecretKey = SecretKey
 -- | Hashed message used as the signature. Encoded in Base64.
 newtype Signature = Signature
     { unSignature :: ByteString
-    }
+    } deriving (Eq)
 
 {- | Compute the hashed message using the supplied hashing function. And then
 encode the result in the Base64 encoding.
@@ -121,9 +123,33 @@ signRequest signer sk = fmap (signer sk) . createStringToSign
         normalize :: Header -> ByteString
         normalize (name, value) = foldedCase name <> value
 
+verifyRequestHmac
+    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey
+    -> Request
+    -> IO Bool
+verifyRequestHmac signer sk signedReq = case unsignedRequest of
+    Nothing         -> pure False
+    Just (req, sig) -> (sig ==) <$> signRequest signer sk req
+  where
+    -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
+    unsignedRequest :: Maybe (Request, Signature)
+    unsignedRequest = case extractOn isAuthHeader $ requestHeaders signedReq of
+        (Nothing, _) -> Nothing
+        (Just (_, val), headers) -> BS.stripPrefix "HMAC " val >>= \sig -> Just
+            ( signedReq { requestHeaders = headers }
+            , Signature sig
+            )
+
 ----------------------------------------------------------------------------
 -- Internals
 ----------------------------------------------------------------------------
+
+authHeaderName :: HeaderName
+authHeaderName = "Authentication"
+
+isAuthHeader :: Header -> Bool
+isAuthHeader = (== authHeaderName) . fst
 
 hashMD5 :: ByteString -> ByteString
 hashMD5 = BA.convert . hash @_ @MD5
@@ -136,3 +162,13 @@ getRequestBody request = BS.concat <$> getChunks
         if chunk == BS.empty
         then pure []
         else (chunk:) <$> getChunks
+
+-- | Removes and returns first element from list that satisfies given predicate.
+extractOn :: forall a . (a -> Bool) -> [a] -> (Maybe a, [a])
+extractOn p = go
+  where
+    go :: [a] -> (Maybe a, [a])
+    go [] = (Nothing, [])
+    go (x:xs)
+        | p x       = (Just x, xs)
+        | otherwise = second (x:) (go xs)
