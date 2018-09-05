@@ -33,6 +33,7 @@ library
                      , memory ^>= 0.14.14
                      , mtl ^>= 2.2.2
                      , servant ^>= 0.14.1
+                     , servant-client ^>= 0.14
                      , servant-server ^>= 0.14.1
                      , wai ^>= 3.2
 
