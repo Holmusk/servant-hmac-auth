@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
 -- | Signing functions.
 
@@ -17,6 +18,7 @@ module Servant.Auth.Hmac
          -- ** Request signing
        , RequestPayload (..)
        , waiRequestToPayload
+       , servantRequestToPayload
        , requestSignature
        , signRequestHmac
        , verifySignatureHmac
@@ -40,24 +42,32 @@ import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
 import Crypto.MAC.HMAC (HMAC (hmacGetDigest), hmac)
+import Data.Binary.Builder (toLazyByteString)
 import Data.ByteString (ByteString)
 import Data.CaseInsensitive (foldedCase)
 import Data.List (sort, uncons)
 import Data.Maybe (fromMaybe)
 import Data.String (IsString)
+import Network.HTTP.Client (RequestBody (..))
 import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
 import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
                     requestHeaders, requestMethod)
 import Servant (Context ((:.), EmptyContext))
 import Servant.API (AuthProtect)
 import Servant.Client (ClientM)
+import Servant.Client.Core.Internal.BaseUrl (BaseUrl)
+import Servant.Client.Internal.HttpClient (requestToClientRequest)
 import Servant.Server (Handler, err401, errBody)
 import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
 
 import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as Base64
+import qualified Data.ByteString.Lazy as LBS (toStrict)
+import qualified Network.HTTP.Client as Client (host, method, path, queryString, requestBody,
+                                                requestHeaders)
 import qualified Network.Wai as Wai (Request)
+import qualified Servant.Client.Core as Servant
 
 ----------------------------------------------------------------------------
 -- Crypto
@@ -79,7 +89,7 @@ encode the result in the Base64 encoding.
 sign :: forall algo . (HashAlgorithm algo)
      => SecretKey   -- ^ Secret key to use
      -> ByteString  -- ^ Message to MAC
-     -> Signature  -- ^ Hashed message
+     -> Signature   -- ^ Hashed message
 sign (SecretKey sk) msg = Signature
                         $ Base64.encode
                         $ BA.convert
@@ -111,6 +121,20 @@ waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
     , rpHeaders = requestHeaders req
     , rpRawUrl  = fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
     }
+
+servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
+servantRequestToPayload url (requestToClientRequest url -> req) = RequestPayload
+    { rpMethod  = Client.method req
+    , rpContent = toBsBody $ Client.requestBody req
+    , rpHeaders = Client.requestHeaders req
+    , rpRawUrl  = Client.host req <> Client.path req <> Client.queryString req
+    }
+  where
+    toBsBody :: RequestBody -> ByteString
+    toBsBody (RequestBodyBS bs)       = bs
+    toBsBody (RequestBodyLBS bs)      = LBS.toStrict bs
+    toBsBody (RequestBodyBuilder _ b) = LBS.toStrict $ toLazyByteString b
+    toBsBody _                        = ""  -- heh
 
 -- TODO: require Content-Type header?
 -- TODO: require Date header with timestamp?
