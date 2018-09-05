@@ -15,17 +15,23 @@ module Servant.Auth.Hmac
        , signSHA256
 
          -- ** Request signing
+       , RequestPayload (..)
+       , waiRequestToPayload
        , requestSignature
        , signRequestHmac
        , verifySignatureHmac
 
          -- * Servant
+         -- ** server
        , hmacAuthHandler
-       , hmacMiddleware
+
+         -- ** client
+       , HmacClient (..)
        ) where
 
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ReaderT)
 import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
@@ -34,16 +40,18 @@ import Data.ByteString (ByteString)
 import Data.CaseInsensitive (foldedCase)
 import Data.List (sort, uncons)
 import Data.Maybe (fromMaybe)
-import Network.HTTP.Types (Header, HeaderName)
-import Network.Wai (Middleware, Request, rawPathInfo, rawQueryString, requestBody,
-                    requestHeaderHost, requestHeaders, requestMethod)
+import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
+import Network.Wai (rawPathInfo, rawQueryString, requestBody, requestHeaderHost, requestHeaders,
+                    requestMethod)
 import Servant.API (AuthProtect)
+import Servant.Client (ClientM)
 import Servant.Server (Handler, err401, errBody)
 import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
 
 import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as Base64
+import qualified Network.Wai as Wai (Request)
 
 ----------------------------------------------------------------------------
 -- Crypto
@@ -82,6 +90,22 @@ signSHA256 = sign @SHA256
 -- Web
 ----------------------------------------------------------------------------
 
+-- | Part of the HTTP request that will be signed.
+data RequestPayload = RequestPayload
+    { rpMethod  :: !Method  -- ^ HTTP method
+    , rpContent :: !ByteString  -- ^ Raw content of HTTP body
+    , rpHeaders :: !RequestHeaders  -- ^ All headers of HTTP request
+    , rpRawUrl  :: !ByteString  -- ^ Raw request URL with host, path pieces and parameters
+    }
+
+waiRequestToPayload :: Wai.Request -> IO RequestPayload
+waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
+    { rpMethod  = requestMethod req
+    , rpContent = body
+    , rpHeaders = requestHeaders req
+    , rpRawUrl  = fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
+    }
+
 -- TODO: require Content-Type header?
 -- TODO: require Date header with timestamp?
 {- | This function signs HTTP request according to the following algorithm:
@@ -116,16 +140,16 @@ user-agentMozilla/5.0
 requestSignature
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key to use
-    -> Request  -- ^ Request to sign
-    -> IO Signature
-requestSignature signer sk = fmap (signer sk) . createStringToSign
+    -> RequestPayload  -- ^ Payload to sign
+    -> Signature
+requestSignature signer sk = signer sk . createStringToSign
   where
-    createStringToSign :: Request -> IO ByteString
-    createStringToSign req = getRequestBody req >>= \body -> pure $ BS.intercalate "\n"
-        [ requestMethod req
-        , hashMD5 body
-        , normalizeHeaders $ requestHeaders req
-        , fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
+    createStringToSign :: RequestPayload -> ByteString
+    createStringToSign RequestPayload{..} = BS.intercalate "\n"
+        [ rpMethod
+        , hashMD5 rpContent
+        , normalizeHeaders rpHeaders
+        , rpRawUrl
         ]
 
     normalizeHeaders :: [Header] -> ByteString
@@ -143,10 +167,11 @@ Authentication: HMAC <signature>
 signRequestHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> Request  -- ^ Original request
-    -> IO Request  -- ^ Signed request
+    -> Wai.Request  -- ^ Original request
+    -> IO Wai.Request  -- ^ Signed request
 signRequestHmac signer sk req = do
-    signature <- requestSignature signer sk req
+    payload <- waiRequestToPayload req
+    let signature = requestSignature signer sk payload
     let authHead = (authHeaderName, "HMAC " <> unSignature signature)
     pure req
         { requestHeaders = authHead : requestHeaders req
@@ -164,18 +189,18 @@ It checks whether @<signature>@ is true request signature.
 verifySignatureHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> Request
-    -> IO Bool
-verifySignatureHmac signer sk signedReq = case unsignedRequest of
-    Nothing         -> pure False
-    Just (req, sig) -> (sig ==) <$> requestSignature signer sk req
+    -> RequestPayload
+    -> Bool
+verifySignatureHmac signer sk signedPayload = case unsignedPayload of
+    Nothing         -> False
+    Just (pay, sig) -> sig == requestSignature signer sk pay
   where
     -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
-    unsignedRequest :: Maybe (Request, Signature)
-    unsignedRequest = case extractOn isAuthHeader $ requestHeaders signedReq of
+    unsignedPayload :: Maybe (RequestPayload, Signature)
+    unsignedPayload = case extractOn isAuthHeader $ rpHeaders signedPayload of
         (Nothing, _) -> Nothing
         (Just (_, val), headers) -> BS.stripPrefix "HMAC " val >>= \sig -> Just
-            ( signedReq { requestHeaders = headers }
+            ( signedPayload { rpHeaders = headers }
             , Signature sig
             )
 
@@ -192,8 +217,8 @@ isAuthHeader = (== authHeaderName) . fst
 hashMD5 :: ByteString -> ByteString
 hashMD5 = BA.convert . hash @_ @MD5
 
-getRequestBody :: Request -> IO ByteString
-getRequestBody request = BS.concat <$> getChunks
+getWaiRequestBody :: Wai.Request -> IO ByteString
+getWaiRequestBody request = BS.concat <$> getChunks
   where
     getChunks :: IO [ByteString]
     getChunks = requestBody request >>= \chunk ->
@@ -216,7 +241,7 @@ extractOn p l =
         Just (x, xs) -> (Just x, before ++ xs)
 
 ----------------------------------------------------------------------------
--- Servant
+-- Servant Server
 ----------------------------------------------------------------------------
 
 type HmacAuth = AuthProtect "hmac-auth"
@@ -226,26 +251,27 @@ type instance AuthServerData HmacAuth = ()
 hmacAuthHandler
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> AuthHandler Request ()
+    -> AuthHandler Wai.Request ()
 hmacAuthHandler signer sk = mkAuthHandler handler
   where
-    handler :: Request -> Handler ()
-    handler req = liftIO (verifySignatureHmac signer sk req) >>= \case
+    handler :: Wai.Request -> Handler ()
+    handler req = liftIO (verifySignatureHmac signer sk <$> waiRequestToPayload req) >>= \case
         True  -> pure ()
         False -> throwError $ err401 { errBody = "HMAC Auth failed." }
 
-{- | This function takes signing function, secret key and request filter and
-signs all outgoing requests if the pass filter. Otherwise requests are not
-changed. Use this function to implemen signing clients.
+----------------------------------------------------------------------------
+-- Servant client
+----------------------------------------------------------------------------
+
+-- | Environment for 'HmacClientM'.
+data HmacSettings = HmacSettings
+    { hmacSigner    :: SecretKey -> ByteString -> Signature
+    , hmacSecretKey :: SecretKey
+    }
+
+{- | @newtype@ wrapper over 'ClientM' that signs all outgoing requests
+automatically.
 -}
-hmacMiddleware
-    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey  -- ^ Secret key for signing requests
-    -> (Request -> Bool)  -- ^ if True, then request will be signed
-    -> Middleware
-hmacMiddleware signer sk reqFilter app req respond =
-    if reqFilter req
-        then do
-            signedReq <- signRequestHmac signer sk req
-            app signedReq respond
-        else app req respond
+newtype HmacClient a = HmacClient
+    { runHmacClient :: ReaderT HmacSettings ClientM a
+    } deriving (Functor, Applicative, Monad)
