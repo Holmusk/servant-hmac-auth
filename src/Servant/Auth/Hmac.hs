@@ -23,6 +23,10 @@ module Servant.Auth.Hmac
 
          -- * Servant
          -- ** server
+       , HmacAuth
+       , AuthContextHandlers
+       , AuthContext
+       , authServerContext
        , hmacAuthHandler
 
          -- ** client
@@ -40,9 +44,11 @@ import Data.ByteString (ByteString)
 import Data.CaseInsensitive (foldedCase)
 import Data.List (sort, uncons)
 import Data.Maybe (fromMaybe)
+import Data.String (IsString)
 import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
-import Network.Wai (rawPathInfo, rawQueryString, requestBody, requestHeaderHost, requestHeaders,
-                    requestMethod)
+import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
+                    requestHeaders, requestMethod)
+import Servant (Context ((:.), EmptyContext))
 import Servant.API (AuthProtect)
 import Servant.Client (ClientM)
 import Servant.Server (Handler, err401, errBody)
@@ -60,7 +66,7 @@ import qualified Network.Wai as Wai (Request)
 -- | The wraper for the secret key.
 newtype SecretKey = SecretKey
     { unSecretKey :: ByteString
-    }
+    } deriving (IsString)
 
 -- | Hashed message used as the signature. Encoded in Base64.
 newtype Signature = Signature
@@ -247,6 +253,15 @@ extractOn p l =
 type HmacAuth = AuthProtect "hmac-auth"
 
 type instance AuthServerData HmacAuth = ()
+
+type AuthContextHandlers = '[AuthHandler Request ()]
+type AuthContext = Context AuthContextHandlers
+
+authServerContext
+    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
+    -> AuthContext
+authServerContext signer sk = hmacAuthHandler signer sk :. EmptyContext
 
 hmacAuthHandler
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function

@@ -6,3 +6,87 @@
 [![Stackage Nightly](http://stackage.org/package/servant-hmac-auth/badge/nightly)](http://stackage.org/nightly/package/servant-hmac-auth)
 
 Servant authentication with HMAC
+
+## Example
+
+In this section we will introduce the client-server example.
+To run it locally you can:
+
+```shell
+$ cabal new-build
+$ cabal new-exec readme
+```
+
+And it will run this on your machine.
+
+### Setting up
+
+Since tutorial is written using Literate Haskell, first, let's write all neccessary pragmas and imports.
+
+```haskell
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeOperators              #-}
+
+import Data.Aeson (ToJSON)
+import Data.Proxy (Proxy (..))
+import GHC.Generics (Generic)
+import Network.Wai.Handler.Warp (run)
+import Servant.API ((:>), Get, JSON)
+import Servant.Server (Application, Server, serveWithContext)
+
+import Servant.Auth.Hmac (HmacAuth, authServerContext, signSHA256)
+```
+
+
+### Server
+
+
+Let's define our `TheAnswer` data type with the neccessary instances for it.
+
+```haskell
+newtype TheAnswer = TheAnswer Int
+    deriving (Show, Generic, ToJSON)
+
+getTheAnswer :: TheAnswer
+getTheAnswer = TheAnswer 42
+```
+
+Now, let's introduce a very simple protected endpoint. It returns the number `42` for all signed requests.
+
+```haskell
+type TheAnswerToEverythingAPI = HmacAuth :> "answer" :> Get '[JSON] TheAnswer
+```
+
+As you see this endpoint is protectedc by `HmacAuth`.
+
+
+And now our server:
+
+```haskell
+server42 :: Server TheAnswerToEverythingAPI
+server42 = \_ -> pure getTheAnswer
+```
+
+Now we can turn `server` into an actual webserver:
+
+```haskell
+app42 :: Application
+app42 = serveWithContext
+    (Proxy @TheAnswerToEverythingAPI)
+    (authServerContext signSHA256 "top-secret")
+    server42
+```
+
+### Client
+
+
+### Main
+
+```haskell
+main :: IO ()
+main = run 8080 app42
+```

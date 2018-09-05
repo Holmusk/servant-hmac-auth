@@ -83,3 +83,15 @@ test-suite servant-hmac-auth-test
                        RecordWildCards
                        ScopedTypeVariables
                        TypeApplications
+
+executable readme
+  main-is:             README.lhs
+  build-depends:       base
+                     , aeson ^>= 1.3
+                     , servant
+                     , servant-hmac-auth
+                     , servant-server
+                     , warp ^>= 3.2
+  build-tool-depends:  markdown-unlit:markdown-unlit
+  ghc-options:         -Wall -pgmL markdown-unlit
+  default-language:    Haskell2010
