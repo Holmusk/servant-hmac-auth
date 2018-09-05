@@ -16,11 +16,12 @@ module Servant.Auth.Hmac
 
          -- ** Request signing
        , requestSignature
-       , signRequest
-       , verifyRequestHmac
+       , signRequestHmac
+       , verifySignatureHmac
 
          -- * Servant
        , hmacAuthHandler
+       , hmacMiddleware
        ) where
 
 import Control.Monad.Except (throwError)
@@ -34,8 +35,8 @@ import Data.CaseInsensitive (foldedCase)
 import Data.List (sort, uncons)
 import Data.Maybe (fromMaybe)
 import Network.HTTP.Types (Header, HeaderName)
-import Network.Wai (Request, rawPathInfo, rawQueryString, requestBody, requestHeaderHost,
-                    requestHeaders, requestMethod)
+import Network.Wai (Middleware, Request, rawPathInfo, rawQueryString, requestBody,
+                    requestHeaderHost, requestHeaders, requestMethod)
 import Servant.API (AuthProtect)
 import Servant.Server (Handler, err401, errBody)
 import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
@@ -139,12 +140,12 @@ requestSignature signer sk = fmap (signer sk) . createStringToSign
 Authentication: HMAC <signature>
 @
 -}
-signRequest
+signRequestHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
     -> Request  -- ^ Original request
     -> IO Request  -- ^ Signed request
-signRequest signer sk req = do
+signRequestHmac signer sk req = do
     signature <- requestSignature signer sk req
     let authHead = (authHeaderName, "HMAC " <> unSignature signature)
     pure req
@@ -160,12 +161,12 @@ Authentication: HMAC <signature>
 
 It checks whether @<signature>@ is true request signature.
 -}
-verifyRequestHmac
+verifySignatureHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
     -> Request
     -> IO Bool
-verifyRequestHmac signer sk signedReq = case unsignedRequest of
+verifySignatureHmac signer sk signedReq = case unsignedRequest of
     Nothing         -> pure False
     Just (req, sig) -> (sig ==) <$> requestSignature signer sk req
   where
@@ -229,6 +230,22 @@ hmacAuthHandler
 hmacAuthHandler signer sk = mkAuthHandler handler
   where
     handler :: Request -> Handler ()
-    handler req = liftIO (verifyRequestHmac signer sk req) >>= \case
+    handler req = liftIO (verifySignatureHmac signer sk req) >>= \case
         True  -> pure ()
         False -> throwError $ err401 { errBody = "HMAC Auth failed." }
+
+{- | This function takes signing function, secret key and request filter and
+signs all outgoing requests if the pass filter. Otherwise requests are not
+changed. Use this function to implemen signing clients.
+-}
+hmacMiddleware
+    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey  -- ^ Secret key for signing requests
+    -> (Request -> Bool)  -- ^ if True, then request will be signed
+    -> Middleware
+hmacMiddleware signer sk reqFilter app req respond =
+    if reqFilter req
+        then do
+            signedReq <- signRequestHmac signer sk req
+            app signedReq respond
+        else app req respond
