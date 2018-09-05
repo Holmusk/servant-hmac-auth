@@ -26,14 +26,17 @@ library
 
   build-depends:       base >= 4.11 && < 5
                      , base64-bytestring ^>= 1.0
+                     , binary ^>= 0.8
                      , bytestring ^>= 0.10
                      , case-insensitive ^>= 1.2
                      , cryptonite ^>= 0.25
                      , http-types ^>= 0.12
+                     , http-client ^>= 0.5
                      , memory ^>= 0.14.14
                      , mtl ^>= 2.2.2
                      , servant ^>= 0.14.1
                      , servant-client ^>= 0.14
+                     , servant-client-core ^>= 0.14
                      , servant-server ^>= 0.14.1
                      , wai ^>= 3.2
 
