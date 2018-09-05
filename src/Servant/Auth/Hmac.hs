@@ -24,9 +24,9 @@ module Servant.Auth.Hmac
          -- * Servant
          -- ** server
        , HmacAuth
-       , AuthContextHandlers
-       , AuthContext
-       , authServerContext
+       , HmacAuthContextHandlers
+       , HmacAuthContext
+       , hmacAuthServerContext
        , hmacAuthHandler
 
          -- ** client
@@ -254,14 +254,14 @@ type HmacAuth = AuthProtect "hmac-auth"
 
 type instance AuthServerData HmacAuth = ()
 
-type AuthContextHandlers = '[AuthHandler Request ()]
-type AuthContext = Context AuthContextHandlers
+type HmacAuthContextHandlers = '[AuthHandler Request ()]
+type HmacAuthContext = Context HmacAuthContextHandlers
 
-authServerContext
+hmacAuthServerContext
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> AuthContext
-authServerContext signer sk = hmacAuthHandler signer sk :. EmptyContext
+    -> HmacAuthContext
+hmacAuthServerContext signer sk = hmacAuthHandler signer sk :. EmptyContext
 
 hmacAuthHandler
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
