@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE InstanceSigs        #-}
-{-# LANGUAGE ViewPatterns        #-}
 
 -- | Servant client authentication.
 
@@ -17,8 +16,10 @@ import Control.Monad.Reader (MonadReader (..), ReaderT, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
 import Data.Binary.Builder (toLazyByteString)
 import Data.ByteString (ByteString)
+import Data.Foldable (toList)
+import Data.List (sort)
 import Data.Proxy (Proxy (..))
-import Data.Sequence ((<|))
+import Data.Sequence (fromList, (<|))
 import Data.String (fromString)
 import Network.HTTP.Client (RequestBody (..))
 import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientM, HasClient, ServantError,
@@ -30,10 +31,10 @@ import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..),
                                  requestSignature)
 
 import qualified Data.ByteString.Lazy as LBS (toStrict)
-import qualified Network.HTTP.Client as Client (host, method, path, port, queryString, requestBody,
-                                                requestHeaders)
+import qualified Network.HTTP.Client as Client (Request, host, method, path, port, queryString,
+                                                requestBody, requestHeaders)
 import qualified Servant.Client.Core as Servant (Request, Response, StreamingResponse,
-                                                 requestHeaders)
+                                                 requestHeaders, requestQueryString)
 
 
 -- | Environment for 'HmacClientM'.
@@ -87,7 +88,7 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 ----------------------------------------------------------------------------
 
 servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
-servantRequestToPayload url (requestToClientRequest url -> req) = RequestPayload
+servantRequestToPayload url sreq =  RequestPayload
     { rpMethod  = Client.method req
     , rpContent = toBsBody $ Client.requestBody req
     , rpHeaders = ("Host", fullHostName)
@@ -97,6 +98,13 @@ servantRequestToPayload url (requestToClientRequest url -> req) = RequestPayload
     , rpRawUrl  = fullHostName <> Client.path req <> Client.queryString req
     }
   where
+    req :: Client.Request
+    req = requestToClientRequest url sreq
+        { Servant.requestQueryString =
+             fromList $ sort $ toList $ Servant.requestQueryString sreq
+        }
+
+
     fullHostName :: ByteString
     fullHostName = Client.host req <> ":" <> fromString (show (Client.port req))
 
