@@ -30,6 +30,7 @@ import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
 import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as Base64
+import qualified Data.ByteString.Lazy as LBS
 
 -- | The wraper for the secret key.
 newtype SecretKey = SecretKey
@@ -131,25 +132,30 @@ that given 'Request' has header:
 Authentication: HMAC <signature>
 @
 
-It checks whether @<signature>@ is true request signature.
+It checks whether @<signature>@ is true request signature. Function returns 'Nothing'
+if it is true, and 'Just' error message otherwise.
 -}
 verifySignatureHmac
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
     -> RequestPayload
-    -> Bool
+    -> Maybe LBS.ByteString
 verifySignatureHmac signer sk signedPayload = case unsignedPayload of
-    Nothing         -> False
-    Just (pay, sig) -> sig == requestSignature signer sk pay
+    Left err         -> Just err
+    Right (pay, sig) -> if sig == requestSignature signer sk pay
+        then Nothing
+        else Just "Signatures don't match"
   where
     -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
-    unsignedPayload :: Maybe (RequestPayload, Signature)
+    unsignedPayload :: Either LBS.ByteString (RequestPayload, Signature)
     unsignedPayload = case extractOn isAuthHeader $ rpHeaders signedPayload of
-        (Nothing, _) -> Nothing
-        (Just (_, val), headers) -> BS.stripPrefix "HMAC " val >>= \sig -> Just
-            ( signedPayload { rpHeaders = headers }
-            , Signature sig
-            )
+        (Nothing, _) -> Left "No 'Authentication' header"
+        (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
+            Just sig -> Right
+                ( signedPayload { rpHeaders = headers }
+                , Signature sig
+                )
+            Nothing -> Left "Can not strip 'HMAC' prefix in header"
 
 ----------------------------------------------------------------------------
 -- Internals
