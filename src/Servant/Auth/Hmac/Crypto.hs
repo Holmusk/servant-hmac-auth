@@ -1,5 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
+-- | Crypto primitives for hmac signing.
+
 module Servant.Auth.Hmac.Crypto
        ( -- * Crypto primitives
          SecretKey (..)
@@ -28,10 +30,6 @@ import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
 import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as Base64
-
-----------------------------------------------------------------------------
--- Crypto
-----------------------------------------------------------------------------
 
 -- | The wraper for the secret key.
 newtype SecretKey = SecretKey

@@ -3,6 +3,8 @@
 {-# LANGUAGE InstanceSigs        #-}
 {-# LANGUAGE ViewPatterns        #-}
 
+-- | Servant client authentication.
+
 module Servant.Auth.Hmac.Client
        ( HmacClientM (..)
        , runHmacClient
@@ -31,9 +33,6 @@ import qualified Network.HTTP.Client as Client (host, method, path, queryString,
 import qualified Servant.Client.Core as Servant (Request, Response, StreamingResponse,
                                                  requestHeaders)
 
-----------------------------------------------------------------------------
--- Client
-----------------------------------------------------------------------------
 
 -- | Environment for 'HmacClientM'.
 data HmacSettings = HmacSettings

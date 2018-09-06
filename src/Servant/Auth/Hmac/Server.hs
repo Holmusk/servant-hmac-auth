@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds    #-}
 {-# LANGUAGE TypeFamilies #-}
 
+-- | Servant server authentication.
+
 module Servant.Auth.Hmac.Server
        ( HmacAuth
        , HmacAuthContextHandlers
@@ -25,9 +27,6 @@ import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature, veri
 import qualified Data.ByteString as BS
 import qualified Network.Wai as Wai (Request)
 
-----------------------------------------------------------------------------
--- Servant auth
-----------------------------------------------------------------------------
 
 type HmacAuth = AuthProtect "hmac-auth"
 
