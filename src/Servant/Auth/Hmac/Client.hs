@@ -12,12 +12,14 @@ module Servant.Auth.Hmac.Client
        ) where
 
 import Control.Monad ((>=>))
+import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (MonadReader (..), ReaderT, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
 import Data.Binary.Builder (toLazyByteString)
 import Data.ByteString (ByteString)
 import Data.Proxy (Proxy (..))
 import Data.Sequence ((<|))
+import Data.String (fromString)
 import Network.HTTP.Client (RequestBody (..))
 import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientM, HasClient, ServantError,
                        runClientM)
@@ -28,7 +30,7 @@ import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..),
                                  requestSignature)
 
 import qualified Data.ByteString.Lazy as LBS (toStrict)
-import qualified Network.HTTP.Client as Client (host, method, path, queryString, requestBody,
+import qualified Network.HTTP.Client as Client (host, method, path, port, queryString, requestBody,
                                                 requestHeaders)
 import qualified Servant.Client.Core as Servant (Request, Response, StreamingResponse,
                                                  requestHeaders)
@@ -45,7 +47,7 @@ automatically.
 -}
 newtype HmacClientM a = HmacClientM
     { runHmacClientM :: ReaderT HmacSettings ClientM a
-    } deriving (Functor, Applicative, Monad, MonadReader HmacSettings)
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadReader HmacSettings)
 
 hmacifyClient :: ClientM a -> HmacClientM a
 hmacifyClient = HmacClientM . lift
@@ -88,10 +90,16 @@ servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
 servantRequestToPayload url (requestToClientRequest url -> req) = RequestPayload
     { rpMethod  = Client.method req
     , rpContent = toBsBody $ Client.requestBody req
-    , rpHeaders = Client.requestHeaders req
-    , rpRawUrl  = Client.host req <> Client.path req <> Client.queryString req
+    , rpHeaders = ("Host", fullHostName)
+                : ("Accept-Encoding", "gzip")
+                : Client.requestHeaders req
+
+    , rpRawUrl  = fullHostName <> Client.path req <> Client.queryString req
     }
   where
+    fullHostName :: ByteString
+    fullHostName = Client.host req <> ":" <> fromString (show (Client.port req))
+
     toBsBody :: RequestBody -> ByteString
     toBsBody (RequestBodyBS bs)       = bs
     toBsBody (RequestBodyLBS bs)      = LBS.toStrict bs

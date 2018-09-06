@@ -71,7 +71,7 @@ data RequestPayload = RequestPayload
     , rpContent :: !ByteString  -- ^ Raw content of HTTP body
     , rpHeaders :: !RequestHeaders  -- ^ All headers of HTTP request
     , rpRawUrl  :: !ByteString  -- ^ Raw request URL with host, path pieces and parameters
-    }
+    } deriving (Show)
 
 -- TODO: require Content-Type header?
 -- TODO: require Date header with timestamp?
