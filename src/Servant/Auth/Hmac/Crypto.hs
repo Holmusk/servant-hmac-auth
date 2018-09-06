@@ -141,19 +141,21 @@ verifySignatureHmac
     -> RequestPayload
     -> Maybe LBS.ByteString
 verifySignatureHmac signer sk signedPayload = case unsignedPayload of
-    Nothing         -> Just "Can not extract auth header"
-    Just (pay, sig) -> if sig == requestSignature signer sk pay
+    Left err         -> Just err
+    Right (pay, sig) -> if sig == requestSignature signer sk pay
         then Nothing
         else Just "Signatures don't match"
   where
     -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
-    unsignedPayload :: Maybe (RequestPayload, Signature)
+    unsignedPayload :: Either LBS.ByteString (RequestPayload, Signature)
     unsignedPayload = case extractOn isAuthHeader $ rpHeaders signedPayload of
-        (Nothing, _) -> Nothing
-        (Just (_, val), headers) -> BS.stripPrefix "HMAC " val >>= \sig -> Just
-            ( signedPayload { rpHeaders = headers }
-            , Signature sig
-            )
+        (Nothing, _) -> Left "No 'Authentication' header"
+        (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
+            Just sig -> Right
+                ( signedPayload { rpHeaders = headers }
+                , Signature sig
+                )
+            Nothing -> Left "Can not strip 'HMAC' prefix in header"
 
 ----------------------------------------------------------------------------
 -- Internals

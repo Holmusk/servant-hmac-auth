@@ -49,7 +49,7 @@ hmacAuthHandler signer sk = mkAuthHandler handler
   where
     handler :: Wai.Request -> Handler ()
     handler req = liftIO (verifySignatureHmac signer sk <$> waiRequestToPayload req) >>= \case
-        Nothing  -> pure ()
+        Nothing -> pure ()
         Just bs -> throwError $ err401 { errBody = bs }
 
 ----------------------------------------------------------------------------
