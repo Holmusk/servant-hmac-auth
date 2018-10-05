@@ -24,7 +24,7 @@ jobs:
       - image: holmusk/servant-hmac-auth-ci
     steps:
       - checkout
-      - run: cd backend && /root/.local/bin/hlint .
+      - run: /root/.local/bin/hlint .
 
 workflows:
   version: 2
