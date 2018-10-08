@@ -1,5 +1,6 @@
 # servant-hmac-auth
 
+[![CircleCI](https://circleci.com/gh/Holmusk/servant-hmac-auth.svg?style=svg)](https://circleci.com/gh/Holmusk/servant-hmac-auth)
 [![Hackage](https://img.shields.io/hackage/v/servant-hmac-auth.svg)](https://hackage.haskell.org/package/servant-hmac-auth)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Stackage Lts](http://stackage.org/package/servant-hmac-auth/badge/lts)](http://stackage.org/lts/package/servant-hmac-auth)
