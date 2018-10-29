@@ -32,7 +32,8 @@ type HmacAuth = AuthProtect "hmac-auth"
 
 type instance AuthServerData HmacAuth = ()
 
-type HmacAuthContextHandlers = '[AuthHandler Wai.Request ()]
+type HmacAuthResult = AuthHandler Wai.Request ()
+type HmacAuthContextHandlers = '[HmacAuthResult]
 type HmacAuthContext = Context HmacAuthContextHandlers
 
 hmacAuthServerContext
@@ -44,7 +45,7 @@ hmacAuthServerContext signer sk = hmacAuthHandler signer sk :. EmptyContext
 hmacAuthHandler
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> AuthHandler Wai.Request ()
+    -> HmacAuthResult
 hmacAuthHandler signer sk = mkAuthHandler handler
   where
     handler :: Wai.Request -> Handler ()
