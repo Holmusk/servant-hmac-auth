@@ -1,6 +1,6 @@
 cabal-version:       2.0
 name:                servant-hmac-auth
-version:             0.0.0
+version:             0.0.1
 description:         Servant authentication with HMAC
 synopsis:            Servant authentication with HMAC
 homepage:            https://github.com/holmusk/servant-hmac-auth
