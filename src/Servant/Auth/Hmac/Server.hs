@@ -10,6 +10,7 @@ module Servant.Auth.Hmac.Server
        , HmacAuthHandler
        , hmacAuthServerContext
        , hmacAuthHandler
+       , hmacAuthHandlerMap
        ) where
 
 import Control.Monad.Except (throwError)
@@ -43,16 +44,32 @@ hmacAuthServerContext
     -> HmacAuthContext
 hmacAuthServerContext signer sk = hmacAuthHandler signer sk :. EmptyContext
 
+-- | Create 'HmacAuthHandler' from signing function and secret key.
 hmacAuthHandler
     :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
     -> SecretKey  -- ^ Secret key that was used for signing 'Request'
     -> HmacAuthHandler
-hmacAuthHandler signer sk = mkAuthHandler handler
+hmacAuthHandler = hmacAuthHandlerMap pure
+
+{- | Like 'hmacAuthHandler' but allows to specify additional mapping function
+for 'Wai.Request'. This can be useful if you want to print incoming request (for
+logging purposes) or filter some headers (to match signature). Given function is
+applied before signature verification.
+-}
+hmacAuthHandlerMap
+    :: (Wai.Request -> Handler Wai.Request)  -- ^ Request mapper
+    -> (SecretKey -> ByteString -> Signature)  -- ^ Signing function
+    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
+    -> HmacAuthHandler
+hmacAuthHandlerMap mapper signer sk = mkAuthHandler handler
   where
     handler :: Wai.Request -> Handler ()
-    handler req = liftIO (verifySignatureHmac signer sk <$> waiRequestToPayload req) >>= \case
-        Nothing -> pure ()
-        Just bs -> throwError $ err401 { errBody = bs }
+    handler req = do
+        newReq <- mapper req
+        verification <- liftIO (verifySignatureHmac signer sk <$> waiRequestToPayload newReq)
+        case verification of
+            Nothing -> pure ()
+            Just bs -> throwError $ err401 { errBody = bs }
 
 ----------------------------------------------------------------------------
 -- Internals

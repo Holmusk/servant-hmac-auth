@@ -1,17 +1,22 @@
-# Change log
+# Changelog
 
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
-0.0.0
-=====
+## Unreleased: 0.1.0
+
+* **Breaking change:** `HmacSettings` now containt post-sign hook for request.
+  `hmacClientSign` function accepts `HmacSettings`.
+
+  _Migration guide:_ use `defaultHmacSettings` for `runHmacClient` function.
+* Add `hmacAuthHandlerMap` function that allows to perform monadic actions on
+  every incoming request for HMAC server.
+* [#28](https://github.com/Holmusk/servant-hmac-auth/issues/28):
+  Added type alias `HmacAuthHandler` for `AuthHandler Wai.Request ()`
+
+## 0.0.0 — Sep 6, 2018
 
 * Initially created.
-
-0.0.1
-=====
-
-* Added type alias `HmacAuthHandler` for `AuthHandler Wai.Request ()`
 
 [1]: https://pvp.haskell.org
 [2]: https://github.com/holmusk/servant-hmac-auth/releases
