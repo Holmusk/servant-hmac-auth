@@ -42,8 +42,8 @@ import Servant.API ((:>), Get, JSON)
 import Servant.Client (BaseUrl (..), Scheme (..), ServantError, mkClientEnv)
 import Servant.Server (Application, Server, serveWithContext)
 
-import Servant.Auth.Hmac (HmacAuth, HmacClientM, SecretKey (..), hmacAuthServerContext, hmacClient,
-                          runHmacClient, signSHA256)
+import Servant.Auth.Hmac (HmacAuth, HmacClientM, SecretKey (..), defaultHmacSettings,
+                          hmacAuthServerContext, hmacClient, runHmacClient, signSHA256)
 ```
 
 ### Server
@@ -106,7 +106,7 @@ runClient :: SecretKey -> HmacClientM a -> IO (Either ServantError a)
 runClient sk client = do
     manager <- newManager defaultManagerSettings
     let env = mkClientEnv manager $ BaseUrl Http "localhost" 8080 ""
-    runHmacClient signSHA256 sk env client
+    runHmacClient (defaultHmacSettings sk) env client
 ```
 
 ### Main

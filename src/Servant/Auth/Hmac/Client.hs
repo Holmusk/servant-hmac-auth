@@ -5,7 +5,12 @@
 -- | Servant client authentication.
 
 module Servant.Auth.Hmac.Client
-       ( HmacClientM (..)
+       ( -- * HMAC client settings
+         HmacSettings (..)
+       , defaultHmacSettings
+
+         -- * HMAC servant client
+       , HmacClientM (..)
        , runHmacClient
        , hmacClient
        ) where
@@ -28,7 +33,7 @@ import Servant.Client.Core (RunClient (..), clientIn)
 import Servant.Client.Internal.HttpClient (requestToClientRequest)
 
 import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..), authHeaderName,
-                                 requestSignature)
+                                 requestSignature, signSHA256)
 
 import qualified Data.ByteString.Lazy as LBS (toStrict)
 import qualified Network.HTTP.Client as Client (Request, host, method, path, port, queryString,
@@ -37,10 +42,30 @@ import qualified Servant.Client.Core as Servant (Request, Response, StreamingRes
                                                  requestHeaders, requestQueryString)
 
 
--- | Environment for 'HmacClientM'.
+-- | Environment for 'HmacClientM'. Contains all required settings for hmac client.
 data HmacSettings = HmacSettings
-    { hmacSigner    :: SecretKey -> ByteString -> Signature
-    , hmacSecretKey :: SecretKey
+    { -- | Singing function that will sign all outgoing requests.
+      hmacSigner      :: SecretKey -> ByteString -> Signature
+
+      -- | Secret key for signing function.
+    , hmacSecretKey   :: SecretKey
+
+      -- | Function to call for every request after this request is signed.
+      -- Useful for debugging.
+    , hmacRequestHook :: Maybe (Servant.Request -> ClientM ())
+    }
+
+{- | Default 'HmacSettings' with the following configuration:
+
+1. Signing function is 'signSHA256'.
+2. Secret key is provided.
+3. 'hmacRequestHook' is 'Nothing'.
+-}
+defaultHmacSettings :: SecretKey -> HmacSettings
+defaultHmacSettings sk = HmacSettings
+    { hmacSigner      = signSHA256
+    , hmacSecretKey   = sk
+    , hmacRequestHook = Nothing
     }
 
 {- | @newtype@ wrapper over 'ClientM' that signs all outgoing requests
@@ -53,12 +78,15 @@ newtype HmacClientM a = HmacClientM
 hmacifyClient :: ClientM a -> HmacClientM a
 hmacifyClient = HmacClientM . lift
 
-
 hmacClientSign :: Servant.Request -> HmacClientM Servant.Request
 hmacClientSign req = HmacClientM $ do
     HmacSettings{..} <- ask
     url <- lift $ asks baseUrl
-    pure $ signRequestHmac hmacSigner hmacSecretKey url req
+    let signedRequest = signRequestHmac hmacSigner hmacSecretKey url req
+    case hmacRequestHook of
+        Nothing   -> pure ()
+        Just hook -> lift $ hook signedRequest
+    pure signedRequest
 
 instance RunClient HmacClientM where
     runRequest :: Servant.Request -> HmacClientM Servant.Response
@@ -71,16 +99,15 @@ instance RunClient HmacClientM where
     throwServantError = hmacifyClient . throwServantError
 
 runHmacClient
-    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey  -- ^ Secret key to sign all requests
+    :: HmacSettings
     -> ClientEnv
     -> HmacClientM a
     -> IO (Either ServantError a)
-runHmacClient hmacSigner hmacSecretKey env client =
-    runClientM (runReaderT (runHmacClientM client) HmacSettings{..}) env
+runHmacClient settings env client =
+    runClientM (runReaderT (runHmacClientM client) settings) env
 
 -- | Generates a set of client functions for an API.
-hmacClient :: forall api .  HasClient HmacClientM api => Client HmacClientM api
+hmacClient :: forall api . HasClient HmacClientM api => Client HmacClientM api
 hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 
 ----------------------------------------------------------------------------
