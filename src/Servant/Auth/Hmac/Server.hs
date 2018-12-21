@@ -24,7 +24,8 @@ import Servant.API (AuthProtect)
 import Servant.Server (Handler, err401, errBody)
 import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
 
-import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature, verifySignatureHmac)
+import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature, keepWhitelistedHeaders,
+                                 verifySignatureHmac)
 
 import qualified Data.ByteString as BS
 import qualified Network.Wai as Wai (Request)
@@ -88,6 +89,6 @@ waiRequestToPayload :: Wai.Request -> IO RequestPayload
 waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
     { rpMethod  = requestMethod req
     , rpContent = body
-    , rpHeaders = requestHeaders req
+    , rpHeaders = keepWhitelistedHeaders $ requestHeaders req
     , rpRawUrl  = fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
     }

@@ -5,6 +5,7 @@ The change log is available [on GitHub][2].
 
 ## Unreleased: 0.1.0
 
+* Introduce whitelisted headers.
 * **Breaking change:** `HmacSettings` now containt post-sign hook for request.
   `hmacClientSign` function accepts `HmacSettings`.
 

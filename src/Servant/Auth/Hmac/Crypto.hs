@@ -13,6 +13,8 @@ module Servant.Auth.Hmac.Crypto
        , RequestPayload (..)
        , requestSignature
        , verifySignatureHmac
+       , whitelistHeaders
+       , keepWhitelistedHeaders
 
          -- * Internals
        , authHeaderName
@@ -73,8 +75,6 @@ data RequestPayload = RequestPayload
     , rpRawUrl  :: !ByteString  -- ^ Raw request URL with host, path pieces and parameters
     } deriving (Show)
 
--- TODO: require Content-Type header?
--- TODO: require Date header with timestamp?
 {- | This function signs HTTP request according to the following algorithm:
 
 @
@@ -124,6 +124,23 @@ requestSignature signer sk = signer sk . createStringToSign
       where
         normalize :: Header -> ByteString
         normalize (name, value) = foldedCase name <> value
+
+{- | White-listed headers. Only these headers will be taken into consideration:
+
+1. @Authentication@
+2. @Host@
+3. @Accept-Encoding@
+-}
+whitelistHeaders :: [HeaderName]
+whitelistHeaders =
+    [ authHeaderName
+    , "Host"
+    , "Accept-Encoding"
+    ]
+
+-- | Keeps only headers from 'whitelistHeaders'.
+keepWhitelistedHeaders :: [Header] -> [Header]
+keepWhitelistedHeaders = filter (\(name, _) -> name `elem` whitelistHeaders)
 
 {- | This function takes signing function @signer@ and secret key and expects
 that given 'Request' has header:

@@ -33,7 +33,7 @@ import Servant.Client.Core (RunClient (..), clientIn)
 import Servant.Client.Internal.HttpClient (requestToClientRequest)
 
 import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..), authHeaderName,
-                                 requestSignature, signSHA256)
+                                 keepWhitelistedHeaders, requestSignature, signSHA256)
 
 import qualified Data.ByteString.Lazy as LBS (toStrict)
 import qualified Network.HTTP.Client as Client (Request, host, method, path, port, queryString,
@@ -118,7 +118,8 @@ servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
 servantRequestToPayload url sreq =  RequestPayload
     { rpMethod  = Client.method req
     , rpContent = toBsBody $ Client.requestBody req
-    , rpHeaders = ("Host", fullHostName)
+    , rpHeaders = keepWhitelistedHeaders
+                $ ("Host", fullHostName)
                 : ("Accept-Encoding", "gzip")
                 : Client.requestHeaders req
 
