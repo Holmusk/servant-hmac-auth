@@ -25,7 +25,6 @@ import Data.Foldable (toList)
 import Data.List (sort)
 import Data.Proxy (Proxy (..))
 import Data.Sequence (fromList, (<|))
-import Data.String (fromString)
 import Network.HTTP.Client (RequestBody (..))
 import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientM, HasClient, ServantError,
                        runClientM)
@@ -36,10 +35,8 @@ import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..),
                                  keepWhitelistedHeaders, requestSignature, signSHA256)
 
 import qualified Data.ByteString.Lazy as LBS (toStrict)
-import qualified Network.HTTP.Client as Client (Request, host, method, path, port, queryString,
-                                                requestBody, requestHeaders)
-import qualified Servant.Client.Core as Servant (Request, Response, StreamingResponse,
-                                                 requestHeaders, requestQueryString)
+import qualified Network.HTTP.Client as Client
+import qualified Servant.Client.Core as Servant
 
 
 -- | Environment for 'HmacClientM'. Contains all required settings for hmac client.
@@ -115,15 +112,15 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 ----------------------------------------------------------------------------
 
 servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
-servantRequestToPayload url sreq =  RequestPayload
+servantRequestToPayload url sreq = RequestPayload
     { rpMethod  = Client.method req
     , rpContent = toBsBody $ Client.requestBody req
     , rpHeaders = keepWhitelistedHeaders
-                $ ("Host", fullHostName)
+                $ ("Host", host)
                 : ("Accept-Encoding", "gzip")
                 : Client.requestHeaders req
 
-    , rpRawUrl  = fullHostName <> Client.path req <> Client.queryString req
+    , rpRawUrl  = host <> Client.path req <> Client.queryString req
     }
   where
     req :: Client.Request
@@ -132,9 +129,8 @@ servantRequestToPayload url sreq =  RequestPayload
              fromList $ sort $ toList $ Servant.requestQueryString sreq
         }
 
-
-    fullHostName :: ByteString
-    fullHostName = Client.host req <> ":" <> fromString (show (Client.port req))
+    host :: ByteString
+    host = Client.host req
 
     toBsBody :: RequestBody -> ByteString
     toBsBody (RequestBodyBS bs)       = bs
