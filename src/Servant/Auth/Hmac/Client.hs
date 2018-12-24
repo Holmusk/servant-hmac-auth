@@ -114,7 +114,7 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
 servantRequestToPayload url sreq = RequestPayload
     { rpMethod  = Client.method req
-    , rpContent = toBsBody $ Client.requestBody req
+    , rpContent = "" -- toBsBody $ Client.requestBody req
     , rpHeaders = keepWhitelistedHeaders
                 $ ("Host", host)
                 : ("Accept-Encoding", "gzip")
@@ -132,11 +132,11 @@ servantRequestToPayload url sreq = RequestPayload
     host :: ByteString
     host = Client.host req
 
-    toBsBody :: RequestBody -> ByteString
-    toBsBody (RequestBodyBS bs)       = bs
-    toBsBody (RequestBodyLBS bs)      = LBS.toStrict bs
-    toBsBody (RequestBodyBuilder _ b) = LBS.toStrict $ toLazyByteString b
-    toBsBody _                        = ""  -- heh
+--    toBsBody :: RequestBody -> ByteString
+--    toBsBody (RequestBodyBS bs)       = bs
+--    toBsBody (RequestBodyLBS bs)      = LBS.toStrict bs
+--    toBsBody (RequestBodyBuilder _ b) = LBS.toStrict $ toLazyByteString b
+--    toBsBody _                        = ""  -- heh
 
 {- | Adds signed header to the request.
 
