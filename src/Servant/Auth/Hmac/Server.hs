@@ -67,7 +67,8 @@ hmacAuthHandlerMap mapper signer sk = mkAuthHandler handler
     handler :: Wai.Request -> Handler ()
     handler req = do
         newReq <- mapper req
-        verification <- liftIO (verifySignatureHmac signer sk <$> waiRequestToPayload newReq)
+        let payload = waiRequestToPayload newReq
+        let verification = verifySignatureHmac signer sk payload
         case verification of
             Nothing -> pure ()
             Just bs -> throwError $ err401 { errBody = bs }
@@ -76,19 +77,20 @@ hmacAuthHandlerMap mapper signer sk = mkAuthHandler handler
 -- Internals
 ----------------------------------------------------------------------------
 
-getWaiRequestBody :: Wai.Request -> IO ByteString
-getWaiRequestBody request = BS.concat <$> getChunks
-  where
-    getChunks :: IO [ByteString]
-    getChunks = requestBody request >>= \chunk ->
-        if chunk == BS.empty
-        then pure []
-        else (chunk:) <$> getChunks
+-- getWaiRequestBody :: Wai.Request -> IO ByteString
+-- getWaiRequestBody request = BS.concat <$> getChunks
+--   where
+--     getChunks :: IO [ByteString]
+--     getChunks = requestBody request >>= \chunk ->
+--         if chunk == BS.empty
+--         then pure []
+--         else (chunk:) <$> getChunks
 
-waiRequestToPayload :: Wai.Request -> IO RequestPayload
-waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
+waiRequestToPayload :: Wai.Request -> RequestPayload
+-- waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
+waiRequestToPayload req = RequestPayload
     { rpMethod  = requestMethod req
-    , rpContent = body
+    , rpContent = ""
     , rpHeaders = keepWhitelistedHeaders $ requestHeaders req
     , rpRawUrl  = fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
     }
