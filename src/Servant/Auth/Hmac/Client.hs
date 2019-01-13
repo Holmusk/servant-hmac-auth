@@ -89,9 +89,6 @@ instance RunClient HmacClientM where
     runRequest :: Servant.Request -> HmacClientM Servant.Response
     runRequest = hmacClientSign >=> hmacifyClient . runRequest
 
-    streamingRequest :: Servant.Request -> HmacClientM Servant.StreamingResponse
-    streamingRequest = hmacClientSign >=> hmacifyClient . streamingRequest
-
     throwServantError :: ServantError -> HmacClientM a
     throwServantError = hmacifyClient . throwServantError
 
