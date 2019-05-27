@@ -19,14 +19,12 @@ import Control.Monad ((>=>))
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (MonadReader (..), ReaderT, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
-import Data.Binary.Builder (toLazyByteString)
 import Data.ByteString (ByteString)
 import Data.Foldable (toList)
 import Data.List (sort)
 import Data.Proxy (Proxy (..))
 import Data.Sequence (fromList, (<|))
-import Network.HTTP.Client (RequestBody (..))
-import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientM, HasClient, ServantError,
+import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientError, ClientM, HasClient,
                        runClientM)
 import Servant.Client.Core (RunClient (..), clientIn)
 import Servant.Client.Internal.HttpClient (requestToClientRequest)
@@ -34,7 +32,6 @@ import Servant.Client.Internal.HttpClient (requestToClientRequest)
 import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..), authHeaderName,
                                  keepWhitelistedHeaders, requestSignature, signSHA256)
 
-import qualified Data.ByteString.Lazy as LBS (toStrict)
 import qualified Network.HTTP.Client as Client
 import qualified Servant.Client.Core as Servant
 
@@ -89,14 +86,14 @@ instance RunClient HmacClientM where
     runRequest :: Servant.Request -> HmacClientM Servant.Response
     runRequest = hmacClientSign >=> hmacifyClient . runRequest
 
-    throwServantError :: ServantError -> HmacClientM a
-    throwServantError = hmacifyClient . throwServantError
+    throwClientError :: ClientError -> HmacClientM a
+    throwClientError = hmacifyClient . throwClientError
 
 runHmacClient
     :: HmacSettings
     -> ClientEnv
     -> HmacClientM a
-    -> IO (Either ServantError a)
+    -> IO (Either ClientError a)
 runHmacClient settings env client =
     runClientM (runReaderT (runHmacClientM client) settings) env
 

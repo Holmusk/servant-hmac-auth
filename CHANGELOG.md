@@ -14,6 +14,9 @@ The change log is available [on GitHub][2].
   every incoming request for HMAC server.
 * [#28](https://github.com/Holmusk/servant-hmac-auth/issues/28):
   Added type alias `HmacAuthHandler` for `AuthHandler Wai.Request ()`
+* [#37](https://github.com/Holmusk/servant-hmac-auth/issues/37):
+  Upgrade `servant-*` libraries to `0.16-*`
+* Use `Cabal-2.4`
 
 ## 0.0.0 — Sep 6, 2018
 

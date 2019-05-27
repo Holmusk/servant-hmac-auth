@@ -39,7 +39,7 @@ import GHC.Generics (Generic)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Network.Wai.Handler.Warp (run)
 import Servant.API ((:>), Get, JSON)
-import Servant.Client (BaseUrl (..), Scheme (..), ServantError, mkClientEnv)
+import Servant.Client (BaseUrl (..), Scheme (..), ClientError, mkClientEnv)
 import Servant.Server (Application, Server, serveWithContext)
 
 import Servant.Auth.Hmac (HmacAuth, HmacClientM, SecretKey (..), defaultHmacSettings,
@@ -102,7 +102,7 @@ client42 = hmacClient @TheAnswerToEverythingUnprotectedAPI
 Now we need to write function that runs our client:
 
 ```haskell
-runClient :: SecretKey -> HmacClientM a -> IO (Either ServantError a)
+runClient :: SecretKey -> HmacClientM a -> IO (Either ClientError a)
 runClient sk client = do
     manager <- newManager defaultManagerSettings
     let env = mkClientEnv manager $ BaseUrl Http "localhost" 8080 ""

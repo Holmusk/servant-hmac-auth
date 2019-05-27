@@ -1,4 +1,7 @@
-resolver: lts-13.2
+resolver: lts-13.23
 
-ghc-options:
-  "$locals": -fhide-source-paths
+extra-deps:
+  - servant-0.16.0.1
+  - servant-client-0.16
+  - servant-client-core-0.16
+  - servant-server-0.16

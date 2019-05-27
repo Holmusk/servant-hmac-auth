@@ -14,11 +14,9 @@ module Servant.Auth.Hmac.Server
        ) where
 
 import Control.Monad.Except (throwError)
-import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import Data.Maybe (fromMaybe)
-import Network.Wai (rawPathInfo, rawQueryString, requestBody, requestHeaderHost, requestHeaders,
-                    requestMethod)
+import Network.Wai (rawPathInfo, rawQueryString, requestHeaderHost, requestHeaders, requestMethod)
 import Servant (Context ((:.), EmptyContext))
 import Servant.API (AuthProtect)
 import Servant.Server (Handler, err401, errBody)
@@ -27,7 +25,6 @@ import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHand
 import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature, keepWhitelistedHeaders,
                                  verifySignatureHmac)
 
-import qualified Data.ByteString as BS
 import qualified Network.Wai as Wai (Request)
 
 
