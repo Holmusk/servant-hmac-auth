@@ -27,7 +27,7 @@ import Data.Sequence (fromList, (<|))
 import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientError, ClientM, HasClient,
                        runClientM)
 import Servant.Client.Core (RunClient (..), clientIn)
-import Servant.Client.Internal.HttpClient (requestToClientRequest)
+import Servant.Client.Internal.HttpClient (defaultMakeClientRequest)
 
 import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..), authHeaderName,
                                  keepWhitelistedHeaders, requestSignature, signSHA256)
@@ -118,7 +118,7 @@ servantRequestToPayload url sreq = RequestPayload
     }
   where
     req :: Client.Request
-    req = requestToClientRequest url sreq
+    req = defaultMakeClientRequest url sreq
         { Servant.requestQueryString =
              fromList $ sort $ toList $ Servant.requestQueryString sreq
         }

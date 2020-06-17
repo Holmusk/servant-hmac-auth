@@ -21,7 +21,7 @@ source-repository head
   location:            https://github.com/holmusk/servant-hmac-auth.git
 
 common common-options
-  build-depends:       base ^>= 4.12.0.0
+  build-depends:       base ^>= 4.14
 
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
@@ -70,15 +70,15 @@ library
                      , containers >= 0.5.7 && < 0.7
                      , cryptonite ^>= 0.25
                      , http-types ^>= 0.12
-                     , http-client ^>= 0.5
-                     , memory ^>= 0.14.14
+                     , http-client ^>= 0.6.4
+                     , memory ^>= 0.15
                      , mtl ^>= 2.2.2
-                     , servant ^>= 0.16
-                     , servant-client ^>= 0.16
-                     , servant-client-core ^>= 0.16
-                     , servant-server ^>= 0.16
+                     , servant ^>= 0.17
+                     , servant-client ^>= 0.17
+                     , servant-client-core ^>= 0.17
+                     , servant-server ^>= 0.17
                      , transformers ^>= 0.5
-                     , wai ^>= 3.2
+                     , wai ^>= 3.2.2.1
 
 test-suite servant-hmac-auth-test
   import:              common-options
@@ -97,6 +97,6 @@ executable readme
                      , servant-hmac-auth
                      , servant-client
                      , servant-server
-                     , warp ^>= 3.2
+                     , warp ^>= 3.3.5
   build-tool-depends:  markdown-unlit:markdown-unlit
   ghc-options:         -pgmL markdown-unlit
