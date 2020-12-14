@@ -83,8 +83,7 @@ hmacClientSign req = HmacClientM $ do
     pure signedRequest
 
 instance RunClient HmacClientM where
-    runRequest :: Servant.Request -> HmacClientM Servant.Response
-    runRequest = hmacClientSign >=> hmacifyClient . runRequest
+    runRequestAcceptStatus s = hmacClientSign >=> hmacifyClient . runRequestAcceptStatus s
 
     throwClientError :: ClientError -> HmacClientM a
     throwClientError = hmacifyClient . throwClientError
