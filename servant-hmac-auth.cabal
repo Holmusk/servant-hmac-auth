@@ -71,7 +71,7 @@ library
                      , containers >= 0.5.7 && < 0.7
                      , cryptonite >= 0.25 && < 0.30
                      , http-types ^>= 0.12
-                     , http-client ^>= 0.6.4 && < 0.8
+                     , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.17
                      , mtl ^>= 2.2.2
                      , servant ^>= 0.18
