@@ -47,4 +47,4 @@ script:
     fi
 
 notifications:
-  email: false
+  email: false 
