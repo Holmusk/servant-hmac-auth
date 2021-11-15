@@ -69,15 +69,15 @@ library
                      , bytestring ^>= 0.10
                      , case-insensitive ^>= 1.2
                      , containers >= 0.5.7 && < 0.7
-                     , cryptonite ^>= 0.26
+                     , cryptonite >= 0.25 && < 0.30
                      , http-types ^>= 0.12
-                     , http-client ^>= 0.6.4
-                     , memory ^>= 0.15
+                     , http-client >= 0.6.4 && < 0.8
+                     , memory >= 0.15 && < 0.17
                      , mtl ^>= 2.2.2
-                     , servant ^>= 0.17
-                     , servant-client ^>= 0.17
-                     , servant-client-core ^>= 0.17
-                     , servant-server ^>= 0.17
+                     , servant ^>= 0.18
+                     , servant-client ^>= 0.18
+                     , servant-client-core ^>= 0.18
+                     , servant-server ^>= 0.18
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
 
@@ -88,16 +88,3 @@ test-suite servant-hmac-auth-test
   main-is:             Spec.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       servant-hmac-auth
-
-executable readme
-  import:              common-options
-  main-is:             README.lhs
-  build-depends:       aeson ^>= 1.4
-                     , http-client
-                     , servant
-                     , servant-hmac-auth
-                     , servant-client
-                     , servant-server
-                     , warp ^>= 3.3.5
-  build-tool-depends:  markdown-unlit:markdown-unlit
-  ghc-options:         -pgmL markdown-unlit
