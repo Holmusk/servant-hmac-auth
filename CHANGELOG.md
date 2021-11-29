@@ -3,6 +3,12 @@
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+
+## 0.1.3 - Nov 29, 2021
+* Bump `servant-*` libraries' version to `0.18-*`
+* Use `GHC 8.8.3` (Stack Resolver `16.2`)
+
+
 ## Unreleased: 0.1.0
 
 * Introduce whitelisted headers.
