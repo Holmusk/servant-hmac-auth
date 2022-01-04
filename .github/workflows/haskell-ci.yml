@@ -7,7 +7,7 @@ on:
 
 jobs:
   stack:
-    name: stack / resolver ${{ matrix.resolver }}
+    name: ghc ${{ matrix.ghc }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
