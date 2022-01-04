@@ -1,7 +1,0 @@
-resolver: lts-16.2
-
-extra-deps:
-- servant-0.18.3@sha256:0fbf8f9274bdfda6a778d6d7ec714c9f0abd17102af9bc002a93fe3ed284e8ca,5309
-- servant-client-0.18.3@sha256:570145df5209b245a141eec6841fbca6785cd88e073e85eecbeff4438ca34784,4602
-- servant-client-core-0.18.3@sha256:db2551c94cc17bef7682602082d6a16e79593cfc939f2d696d4ccee21b2b2091,3649
-- servant-server-0.18.3@sha256:8040e38682d936a2c87ad2a787cc65b3bad18c87e9f773cf7bcfc12ce76af96e,5508
