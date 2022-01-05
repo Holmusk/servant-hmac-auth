@@ -67,14 +67,14 @@ jobs:
         name: Cache ~/.stack
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-${{ matrix.resolver }}-stack
+          key: ${{ runner.os }}-${{ matrix.stack-yaml }}
 
       - name: Install dependencies
         run: |
-          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --only-dependencies
+          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --only-dependencies --system-ghc
       - name: Build
         run: |
-          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks
+          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --system-ghc
       - name: Test
         run: |
-          stack test --stack-yaml ${{ matrix.stack-yaml }}
+          stack test --stack-yaml ${{ matrix.stack-yaml }} --system-ghc
