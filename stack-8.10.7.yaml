@@ -1,7 +1,8 @@
-resolver: lts-14.27
+resolver: lts-18.21
 
 extra-deps:
-  - memory-0.16.0@sha256:fea26d1d3cd954d66c9103de6c5fbf80454560889ee8de54d368fa9d1b01140b,5064
+  - cryptonite-0.29@sha256:147724f6a8e4394fcbd51bf52aba7a8b92d3fc8f42055cd6ca9486655e2ab614,18312
+  - memory-0.15.0@sha256:c8f08e04d68a4a8bdbf6eed1cbf57f26f1d59beadf986a3ac18c78bf8a07a439,5005
   - servant-0.18.3@sha256:0fbf8f9274bdfda6a778d6d7ec714c9f0abd17102af9bc002a93fe3ed284e8ca,5309
   - servant-client-0.18.3@sha256:570145df5209b245a141eec6841fbca6785cd88e073e85eecbeff4438ca34784,4602
   - servant-client-core-0.18.3@sha256:db2551c94cc17bef7682602082d6a16e79593cfc939f2d696d4ccee21b2b2091,3649
