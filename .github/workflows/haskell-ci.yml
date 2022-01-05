@@ -71,10 +71,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --only-dependencies --system-ghc
+          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --only-dependencies
       - name: Build
         run: |
-          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks --system-ghc
+          stack build --stack-yaml ${{ matrix.stack-yaml }} --test --bench --no-run-tests --no-run-benchmarks
       - name: Test
         run: |
-          stack test --stack-yaml ${{ matrix.stack-yaml }} --system-ghc
+          stack test --stack-yaml ${{ matrix.stack-yaml }}

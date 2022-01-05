@@ -1,4 +1,4 @@
-resolver: lts-16.2
+resolver: lts-16.31
 
 extra-deps:
   - servant-0.18.3@sha256:0fbf8f9274bdfda6a778d6d7ec714c9f0abd17102af9bc002a93fe3ed284e8ca,5309
