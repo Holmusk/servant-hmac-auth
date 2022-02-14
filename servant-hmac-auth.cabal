@@ -75,10 +75,10 @@ library
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.17
                      , mtl ^>= 2.2.2
-                     , servant ^>= 0.18
-                     , servant-client ^>= 0.18
-                     , servant-client-core ^>= 0.18
-                     , servant-server ^>= 0.18
+                     , servant ^>= 0.18 || ^>= 0.19
+                     , servant-client ^>= 0.18 || ^>= 0.19
+                     , servant-client-core ^>= 0.18 || ^>= 0.19
+                     , servant-server ^>= 0.18 || ^>= 0.19
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
 
