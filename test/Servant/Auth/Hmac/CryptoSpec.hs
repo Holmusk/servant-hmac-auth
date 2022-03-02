@@ -27,9 +27,9 @@ goldenTest name actualOutput =
 
 sha256Scenarios :: [(SecretKey, RequestPayload)]
 sha256Scenarios =
-    [ (SecretKey "Some-s3cr3t", RequestPayload methodGet "" [(mk "Host", "my-server.local")] "http://my-server.local/test")
-    , (SecretKey "s3cret2!", RequestPayload methodPost "This is a text content." [(mk "Host", "www.haskell.server"), (mk "User-Agent", "Mozilla/5.0"), (mk "Authentication", "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")] "https://www.haskell.server/test")
-    , (SecretKey "123456789abcdef", RequestPayload methodPatch "\00HellowORLD" [(mk "Host", "files.myrepository.org"), (mk "Content-Encoding", "custom-fake-encoding"), (mk "Accept-Encoding", "gzip")] "https://files.myrepository.org/files/4601237722")
+    [ (SecretKey "Some-s3cr3t", RequestPayload methodGet "" [(mk "Host", "my-server.local")] "my-server.local/test")
+    , (SecretKey "s3cret2!", RequestPayload methodPost "This is a text content." [(mk "Host", "www.haskell.server"), (mk "User-Agent", "Mozilla/5.0"), (mk "Authentication", "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")] "www.haskell.server/test")
+    , (SecretKey "123456789abcdef", RequestPayload methodPatch "\00HellowORLD" [(mk "Host", "files.myrepository.org"), (mk "Content-Encoding", "custom-fake-encoding"), (mk "Accept-Encoding", "gzip")] "files.myrepository.org/files/4601237722")
     ]
 
 formatResponse :: [Signature] -> Text
