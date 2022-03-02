@@ -89,3 +89,11 @@ test-suite servant-hmac-auth-test
   main-is:             Spec.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       servant-hmac-auth
+                     , case-insensitive ^>= 1.2
+                     , filepath
+                     , hspec
+                     , hspec-golden ^>= 0.2
+                     , http-types ^>= 0.12
+                     , text
+  other-modules:       Servant.Auth.Hmac.CryptoSpec
+  build-tool-depends:  hspec-discover:hspec-discover == 2.*
