@@ -20,10 +20,12 @@ import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (MonadReader (..), ReaderT, asks, runReaderT)
 import Control.Monad.Trans.Class (lift)
 import Data.ByteString (ByteString)
+import Data.CaseInsensitive (mk)
 import Data.Foldable (toList)
 import Data.List (sort)
 import Data.Proxy (Proxy (..))
 import Data.Sequence (fromList, (<|))
+import Data.String (fromString)
 import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientError, ClientM, HasClient,
                        runClientM)
 import Servant.Client.Core (RunClient (..), clientIn)
@@ -109,11 +111,11 @@ servantRequestToPayload url sreq = RequestPayload
     { rpMethod  = Client.method req
     , rpContent = "" -- toBsBody $ Client.requestBody req
     , rpHeaders = keepWhitelistedHeaders
-                $ ("Host", host)
+                $ ("Host", hostAndPort)
                 : ("Accept-Encoding", "gzip")
                 : Client.requestHeaders req
 
-    , rpRawUrl  = host <> Client.path req <> Client.queryString req
+    , rpRawUrl  = hostAndPort <> Client.path req <> Client.queryString req
     }
   where
     req :: Client.Request
@@ -122,8 +124,14 @@ servantRequestToPayload url sreq = RequestPayload
              fromList $ sort $ toList $ Servant.requestQueryString sreq
         }
 
-    host :: ByteString
-    host = Client.host req
+    hostAndPort :: ByteString
+    hostAndPort = case lookup (mk "Host") (Client.requestHeaders req) of
+        Just hp -> hp
+        Nothing ->
+            case (Client.secure req, Client.port req) of
+                (True, 443) -> Client.host req
+                (False, 80) -> Client.host req
+                (_, p) -> Client.host req <> ":" <> fromString (show p)
 
 --    toBsBody :: RequestBody -> ByteString
 --    toBsBody (RequestBodyBS bs)       = bs
