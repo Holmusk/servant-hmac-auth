@@ -14,22 +14,17 @@ module Servant.Auth.Hmac.Server (
 
 import Control.Monad.Except (throwError)
 import Data.ByteString (ByteString)
-import Data.Maybe (fromMaybe)
-import Network.Wai (rawPathInfo, rawQueryString, requestHeaderHost, requestHeaders, requestMethod)
+import qualified Network.Wai as Wai (Request)
 import Servant (Context (EmptyContext, (:.)))
 import Servant.API (AuthProtect)
-import Servant.Server (Handler, err401, errBody)
-import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
-
 import Servant.Auth.Hmac.Crypto (
-    RequestPayload (..),
     SecretKey,
     Signature,
-    keepWhitelistedHeaders,
     verifySignatureHmac,
  )
-
-import qualified Network.Wai as Wai (Request)
+import Servant.Auth.Hmac.Internal (waiRequestToPayload)
+import Servant.Server (Handler, err401, errBody)
+import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHandler)
 
 type HmacAuth = AuthProtect "hmac-auth"
 
@@ -74,31 +69,8 @@ hmacAuthHandlerMap mapper signer sk = mkAuthHandler handler
     handler :: Wai.Request -> Handler ()
     handler req = do
         newReq <- mapper req
-        let payload = waiRequestToPayload newReq
+        let payload = waiRequestToPayload newReq ""
         let verification = verifySignatureHmac signer sk payload
         case verification of
             Nothing -> pure ()
             Just bs -> throwError $ err401{errBody = bs}
-
-----------------------------------------------------------------------------
--- Internals
-----------------------------------------------------------------------------
-
--- getWaiRequestBody :: Wai.Request -> IO ByteString
--- getWaiRequestBody request = BS.concat <$> getChunks
---   where
---     getChunks :: IO [ByteString]
---     getChunks = requestBody request >>= \chunk ->
---         if chunk == BS.empty
---         then pure []
---         else (chunk:) <$> getChunks
-
-waiRequestToPayload :: Wai.Request -> RequestPayload
--- waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
-waiRequestToPayload req =
-    RequestPayload
-        { rpMethod = requestMethod req
-        , rpContent = ""
-        , rpHeaders = keepWhitelistedHeaders $ requestHeaders req
-        , rpRawUrl = fromMaybe mempty (requestHeaderHost req) <> rawPathInfo req <> rawQueryString req
-        }

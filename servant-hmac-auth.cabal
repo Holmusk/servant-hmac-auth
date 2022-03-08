@@ -64,10 +64,11 @@ library
   exposed-modules:     Servant.Auth.Hmac
                            Servant.Auth.Hmac.Crypto
                            Servant.Auth.Hmac.Client
+                           Servant.Auth.Hmac.Secure
                            Servant.Auth.Hmac.Server
+  other-modules:       Servant.Auth.Hmac.Internal
 
   build-depends:       base64-bytestring >= 1.0 && <= 2
-                     , binary ^>= 0.8
                      , bytestring ^>= 0.10
                      , case-insensitive ^>= 1.2
                      , containers >= 0.5.7 && < 0.7
@@ -96,10 +97,13 @@ test-suite servant-hmac-auth-test
                      , hspec-golden ^>= 0.2
                      , http-client >= 0.6.4 && < 0.8
                      , http-types ^>= 0.12
+                     , servant ^>= 0.18 || ^>= 0.19
                      , servant-client ^>= 0.18 || ^>= 0.19
                      , servant-server ^>= 0.18 || ^>= 0.19
                      , text
+                     , transformers ^>= 0.5
                      , warp ^>= 3.3
   other-modules:       Servant.Auth.Hmac.CryptoSpec
+                       Servant.Auth.Hmac.SecureSpec
                        Servant.Auth.HmacSpec
   build-tool-depends:  hspec-discover:hspec-discover == 2.*

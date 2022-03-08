@@ -3,6 +3,12 @@
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+## Unrelease: x.y.z
+
+* Authenticate against the request's body. The HMAC signature is influenced by
+  the HTTP method, the request's body, some HTTP headers and the requested URL
+  (except for the scheme).
+
 
 ## 0.1.3 - Nov 29, 2021
 * Bump `servant-*` libraries' version to `0.18-*`

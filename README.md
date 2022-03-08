@@ -125,3 +125,18 @@ main = do
 
     threadDelay $ 10 ^ (6 :: Int)
 ```
+
+### Note on large requests and streaming
+
+The authentication relies on various information about the request such as its
+body, more specifically the MD5 hash of the entire body. As a consequence, the
+library will consume the request's content in its entirety before transfering it
+to the underlying client or server. Thus, very large requests will be buffered
+in-memory while hashing, and streaming won't work as expected as all the chunks
+will be transfered at once only after signing. This is true whether the client /
+server actually consumes the content or not. This library is therefore not
+suited for those use cases.
+
+Note that this also comes with a DoS risk as very large requests will be stored
+in memory for signature and consumption. Users need to keep that in mind and
+take the necessary precautions to prevent those.
