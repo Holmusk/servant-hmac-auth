@@ -49,11 +49,11 @@ instance Exception HmacSignatureException
 
 {- HMAC authentication contextual information. -}
 data HmacAuthCheck = HmacAuthCheck
-    { -- | Signing algorithm used for the authentication, taking in both the
-      -- secret and the request payload. The usual algorithm is 'signSHA256'.
-      hacSign :: !(SecretKey -> ByteString -> Signature)
-    , -- | Secret key used for the authentication.
-      hacSecretKey :: !SecretKey
+    { hacSign :: !(SecretKey -> ByteString -> Signature)
+    -- ^ Signing algorithm used for the authentication, taking in both the
+    -- secret and the request payload. The usual algorithm is 'signSHA256'.
+    , hacSecretKey :: !SecretKey
+    -- ^ Secret key used for the authentication.
     }
 
 {- | The HMAC authentication combinator.
