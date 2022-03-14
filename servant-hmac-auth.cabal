@@ -99,9 +99,11 @@ test-suite servant-hmac-auth-test
                      , http-types ^>= 0.12
                      , servant ^>= 0.18 || ^>= 0.19
                      , servant-client ^>= 0.18 || ^>= 0.19
+                     , servant-client-core ^>= 0.18 || ^>= 0.19
                      , servant-server ^>= 0.18 || ^>= 0.19
                      , text
                      , transformers ^>= 0.5
+                     , wai ^>= 3.2.2.1
                      , warp ^>= 3.3
   other-modules:       Servant.Auth.Hmac.CryptoSpec
                        Servant.Auth.Hmac.SecureSpec
