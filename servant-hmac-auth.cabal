@@ -23,6 +23,11 @@ source-repository head
   type:                git
   location:            https://github.com/holmusk/servant-hmac-auth.git
 
+flag build-readme
+  description:         Build the example in the README.md file.
+  default:             False
+  manual:              True
+
 common common-options
   build-depends:       base >= 4.11.1.0 && < 4.16
 
@@ -83,6 +88,20 @@ library
                      , servant-server ^>= 0.18 || ^>= 0.19
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
+executable readme
+  import:              common-options
+  if !flag(build-readme)
+    buildable:         False
+  main-is:             README.lhs
+  build-depends:       aeson >= 1.4 && < 1.6
+                     , http-client
+                     , servant
+                     , servant-hmac-auth
+                     , servant-client
+                     , servant-server
+                     , warp ^>= 3.3.5
+  build-tool-depends:  markdown-unlit:markdown-unlit
+  ghc-options:         -pgmL markdown-unlit
 
 test-suite servant-hmac-auth-test
   import:              common-options

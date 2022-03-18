@@ -13,13 +13,10 @@ In this section, we will introduce the client-server example.
 To run it locally you can:
 
 ```shell
-$ cabal new-build
-$ cabal new-exec readme
+cabal run readme
 ```
 
-So,it will run this on your machine.
-
-### Setting up
+## Setting up
 
 Since this tutorial is written using Literate Haskell, first, let's write all necessary pragmas and imports.
 
@@ -125,6 +122,8 @@ main = do
 
     threadDelay $ 10 ^ (6 :: Int)
 ```
+
+## New experimental API
 
 ### Note on large requests and streaming
 
