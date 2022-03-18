@@ -8,6 +8,8 @@ Stability   :  experimental
 
 Servant combinator and operations for HMAC authentication of requests.
 
+Full examples are available on the library GitHub repository, in the @examples/@ directory.
+
 IMPORTANT NOTE: the HMAC authentication scheme requires hashing the entirety of
 the content. The later is still required though by the backend for consumption.
 To that end, it will be retained in-memory. Users need to keep that in mind, and
@@ -67,7 +69,8 @@ instance Exception HmacSignatureException
 
 {- | Client-side HMAC authentication contextual information.
 
->>> :{
+@
+clientSideAuth :: HmacClientSideAuth HelloUser
 clientSideAuth = HmacClientSideAuth
     { hcsaSign = signSHA256
     , hcsaUserRequest = \case
@@ -77,7 +80,7 @@ clientSideAuth = HmacClientSideAuth
         UserA -> userASk
         UserB -> userBSk
     }
-}
+@
 -}
 data HmacClientSideAuth usr = HmacClientSideAuth
     { hcsaSign :: !(SecretKey -> ByteString -> Signature)
@@ -92,7 +95,8 @@ data HmacClientSideAuth usr = HmacClientSideAuth
 {- | Server-side HMAC authentication contextual information required to
 authenticate the remote users using their secret key.
 
->>> :{
+@
+serverSideAuth :: HmacServerSideAuth HelloUser
 serverSideAuth = HmacServerSideAuth
     { hssaSign = signSHA256
     , hssaIdentifyUser = \req -> case lookup "X-User" (Wai.requestHeaders req) of
@@ -103,7 +107,14 @@ serverSideAuth = HmacServerSideAuth
         UserA -> userASk
         UserB -> userBSk
     }
-:}
+
+myApp :: Application
+myApp =
+    serveWithContext
+        myApi
+        (serverSideAuth :. EmptyContext)
+        myServer
+@
 -}
 data HmacServerSideAuth usr = HmacServerSideAuth
     { hssaSign :: !(SecretKey -> ByteString -> Signature)
