@@ -87,10 +87,10 @@ library
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.17
                      , mtl ^>= 2.2.2
-                     , servant ^>= 0.18 || ^>= 0.19
-                     , servant-client ^>= 0.18 || ^>= 0.19
-                     , servant-client-core ^>= 0.18 || ^>= 0.19
-                     , servant-server ^>= 0.18 || ^>= 0.19
+                     , servant >= 0.18 && < 0.20
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
 executable readme
@@ -99,11 +99,11 @@ executable readme
     buildable:         False
   main-is:             README.lhs
   build-depends:       aeson >= 1.4 && < 1.6
-                     , http-client
-                     , servant
+                     , http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
                      , servant-hmac-auth
-                     , servant-client
-                     , servant-server
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
                      , warp ^>= 3.3.5
   build-tool-depends:  markdown-unlit:markdown-unlit
   ghc-options:         -pgmL markdown-unlit
@@ -114,11 +114,11 @@ executable examples-client
     buildable:         False
   main-is:             Main.hs
   hs-source-dirs:      examples/client
-  build-depends:       http-client
-                     , servant
+  build-depends:       http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
                      , servant-hmac-auth
-                     , servant-client
-                     , servant-client-core ^>= 0.18 || ^>= 0.19
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
 
 executable examples-server
   import:              common-options
@@ -126,8 +126,8 @@ executable examples-server
     buildable:         False
   main-is:             Main.hs
   hs-source-dirs:      examples/server
-  build-depends:       http-client
-                     , servant
+  build-depends:       http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
                      , servant-hmac-auth
                      , servant-server
                      , wai ^>= 3.2.2.1
@@ -146,10 +146,10 @@ test-suite servant-hmac-auth-test
                      , hspec-golden ^>= 0.2
                      , http-client >= 0.6.4 && < 0.8
                      , http-types ^>= 0.12
-                     , servant ^>= 0.18 || ^>= 0.19
-                     , servant-client ^>= 0.18 || ^>= 0.19
-                     , servant-client-core ^>= 0.18 || ^>= 0.19
-                     , servant-server ^>= 0.18 || ^>= 0.19
+                     , servant >= 0.18 && < 0.20
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
                      , text
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
