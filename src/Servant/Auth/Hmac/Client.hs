@@ -1,19 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE InstanceSigs        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE InstanceSigs #-}
 
 -- | Servant client authentication.
+module Servant.Auth.Hmac.Client (
+    -- * HMAC client settings
+    HmacSettings (..),
+    defaultHmacSettings,
 
-module Servant.Auth.Hmac.Client
-       ( -- * HMAC client settings
-         HmacSettings (..)
-       , defaultHmacSettings
-
-         -- * HMAC servant client
-       , HmacClientM (..)
-       , runHmacClient
-       , hmacClient
-       ) where
+    -- * HMAC servant client
+    HmacClientM (..),
+    runHmacClient,
+    hmacClient,
+) where
 
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (MonadIO (..))
@@ -26,29 +25,40 @@ import Data.List (sort)
 import Data.Proxy (Proxy (..))
 import Data.Sequence (fromList, (<|))
 import Data.String (fromString)
-import Servant.Client (BaseUrl, Client, ClientEnv (baseUrl), ClientError, ClientM, HasClient,
-                       runClientM)
+import Servant.Client (
+    BaseUrl,
+    Client,
+    ClientEnv (baseUrl),
+    ClientError,
+    ClientM,
+    HasClient,
+    runClientM,
+ )
 import Servant.Client.Core (RunClient (..), clientIn)
 import Servant.Client.Internal.HttpClient (defaultMakeClientRequest)
 
-import Servant.Auth.Hmac.Crypto (RequestPayload (..), SecretKey, Signature (..), authHeaderName,
-                                 keepWhitelistedHeaders, requestSignature, signSHA256)
+import Servant.Auth.Hmac.Crypto (
+    RequestPayload (..),
+    SecretKey,
+    Signature (..),
+    authHeaderName,
+    keepWhitelistedHeaders,
+    requestSignature,
+    signSHA256,
+ )
 
 import qualified Network.HTTP.Client as Client
 import qualified Servant.Client.Core as Servant
 
-
 -- | Environment for 'HmacClientM'. Contains all required settings for hmac client.
 data HmacSettings = HmacSettings
-    { -- | Singing function that will sign all outgoing requests.
-      hmacSigner      :: SecretKey -> ByteString -> Signature
-
-      -- | Secret key for signing function.
-    , hmacSecretKey   :: SecretKey
-
-      -- | Function to call for every request after this request is signed.
-      -- Useful for debugging.
+    { hmacSigner :: SecretKey -> ByteString -> Signature
+    -- ^ Singing function that will sign all outgoing requests.
+    , hmacSecretKey :: SecretKey
+    -- ^ Secret key for signing function.
     , hmacRequestHook :: Maybe (Servant.Request -> ClientM ())
+    -- ^ Function to call for every request after this request is signed.
+    -- Useful for debugging.
     }
 
 {- | Default 'HmacSettings' with the following configuration:
@@ -58,18 +68,20 @@ data HmacSettings = HmacSettings
 3. 'hmacRequestHook' is 'Nothing'.
 -}
 defaultHmacSettings :: SecretKey -> HmacSettings
-defaultHmacSettings sk = HmacSettings
-    { hmacSigner      = signSHA256
-    , hmacSecretKey   = sk
-    , hmacRequestHook = Nothing
-    }
+defaultHmacSettings sk =
+    HmacSettings
+        { hmacSigner = signSHA256
+        , hmacSecretKey = sk
+        , hmacRequestHook = Nothing
+        }
 
 {- | @newtype@ wrapper over 'ClientM' that signs all outgoing requests
 automatically.
 -}
 newtype HmacClientM a = HmacClientM
     { runHmacClientM :: ReaderT HmacSettings ClientM a
-    } deriving (Functor, Applicative, Monad, MonadIO, MonadReader HmacSettings)
+    }
+    deriving (Functor, Applicative, Monad, MonadIO, MonadReader HmacSettings)
 
 hmacifyClient :: ClientM a -> HmacClientM a
 hmacifyClient = HmacClientM . lift
@@ -80,7 +92,7 @@ hmacClientSign req = HmacClientM $ do
     url <- lift $ asks baseUrl
     let signedRequest = signRequestHmac hmacSigner hmacSecretKey url req
     case hmacRequestHook of
-        Nothing   -> pure ()
+        Nothing -> pure ()
         Just hook -> lift $ hook signedRequest
     pure signedRequest
 
@@ -90,16 +102,16 @@ instance RunClient HmacClientM where
     throwClientError :: ClientError -> HmacClientM a
     throwClientError = hmacifyClient . throwClientError
 
-runHmacClient
-    :: HmacSettings
-    -> ClientEnv
-    -> HmacClientM a
-    -> IO (Either ClientError a)
+runHmacClient ::
+    HmacSettings ->
+    ClientEnv ->
+    HmacClientM a ->
+    IO (Either ClientError a)
 runHmacClient settings env client =
     runClientM (runReaderT (runHmacClientM client) settings) env
 
 -- | Generates a set of client functions for an API.
-hmacClient :: forall api . HasClient HmacClientM api => Client HmacClientM api
+hmacClient :: forall api. HasClient HmacClientM api => Client HmacClientM api
 hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 
 ----------------------------------------------------------------------------
@@ -107,22 +119,26 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 ----------------------------------------------------------------------------
 
 servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
-servantRequestToPayload url sreq = RequestPayload
-    { rpMethod  = Client.method req
-    , rpContent = "" -- toBsBody $ Client.requestBody req
-    , rpHeaders = keepWhitelistedHeaders
-                $ ("Host", hostAndPort)
-                : ("Accept-Encoding", "gzip")
-                : Client.requestHeaders req
-
-    , rpRawUrl  = hostAndPort <> Client.path req <> Client.queryString req
-    }
+servantRequestToPayload url sreq =
+    RequestPayload
+        { rpMethod = Client.method req
+        , rpContent = "" -- toBsBody $ Client.requestBody req
+        , rpHeaders =
+            keepWhitelistedHeaders $
+                ("Host", hostAndPort) :
+                ("Accept-Encoding", "gzip") :
+                Client.requestHeaders req
+        , rpRawUrl = hostAndPort <> Client.path req <> Client.queryString req
+        }
   where
     req :: Client.Request
-    req = defaultMakeClientRequest url sreq
-        { Servant.requestQueryString =
-             fromList $ sort $ toList $ Servant.requestQueryString sreq
-        }
+    req =
+        defaultMakeClientRequest
+            url
+            sreq
+                { Servant.requestQueryString =
+                    fromList $ sort $ toList $ Servant.requestQueryString sreq
+                }
 
     hostAndPort :: ByteString
     hostAndPort = case lookup (mk "Host") (Client.requestHeaders req) of
@@ -145,14 +161,19 @@ servantRequestToPayload url sreq = RequestPayload
 Authentication: HMAC <signature>
 @
 -}
-signRequestHmac
-    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> BaseUrl  -- ^ Base url for servant request
-    -> Servant.Request  -- ^ Original request
-    -> Servant.Request  -- ^ Signed request
+signRequestHmac ::
+    -- | Signing function
+    (SecretKey -> ByteString -> Signature) ->
+    -- | Secret key that was used for signing 'Request'
+    SecretKey ->
+    -- | Base url for servant request
+    BaseUrl ->
+    -- | Original request
+    Servant.Request ->
+    -- | Signed request
+    Servant.Request
 signRequestHmac signer sk url req = do
     let payload = servantRequestToPayload url req
     let signature = requestSignature signer sk payload
     let authHead = (authHeaderName, "HMAC " <> unSignature signature)
-    req { Servant.requestHeaders = authHead <| Servant.requestHeaders req }
+    req{Servant.requestHeaders = authHead <| Servant.requestHeaders req}

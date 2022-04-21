@@ -1,24 +1,23 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | Crypto primitives for hmac signing.
+module Servant.Auth.Hmac.Crypto (
+    -- * Crypto primitives
+    SecretKey (..),
+    Signature (..),
+    sign,
+    signSHA256,
 
-module Servant.Auth.Hmac.Crypto
-       ( -- * Crypto primitives
-         SecretKey (..)
-       , Signature (..)
-       , sign
-       , signSHA256
+    -- * Request signing
+    RequestPayload (..),
+    requestSignature,
+    verifySignatureHmac,
+    whitelistHeaders,
+    keepWhitelistedHeaders,
 
-         -- * Request signing
-       , RequestPayload (..)
-       , requestSignature
-       , verifySignatureHmac
-       , whitelistHeaders
-       , keepWhitelistedHeaders
-
-         -- * Internals
-       , authHeaderName
-       ) where
+    -- * Internals
+    authHeaderName,
+) where
 
 import Crypto.Hash (hash)
 import Crypto.Hash.Algorithms (MD5, SHA256)
@@ -42,20 +41,27 @@ newtype SecretKey = SecretKey
 -- | Hashed message used as the signature. Encoded in Base64.
 newtype Signature = Signature
     { unSignature :: ByteString
-    } deriving (Eq)
+    }
+    deriving (Eq)
 
 {- | Compute the hashed message using the supplied hashing function. And then
 encode the result in the Base64 encoding.
 -}
-sign :: forall algo . (HashAlgorithm algo)
-     => SecretKey   -- ^ Secret key to use
-     -> ByteString  -- ^ Message to MAC
-     -> Signature   -- ^ Hashed message
-sign (SecretKey sk) msg = Signature
-                        $ Base64.encode
-                        $ BA.convert
-                        $ hmacGetDigest
-                        $ hmac @_ @_ @algo sk msg
+sign ::
+    forall algo.
+    (HashAlgorithm algo) =>
+    -- | Secret key to use
+    SecretKey ->
+    -- | Message to MAC
+    ByteString ->
+    -- | Hashed message
+    Signature
+sign (SecretKey sk) msg =
+    Signature $
+        Base64.encode $
+            BA.convert $
+                hmacGetDigest $
+                    hmac @_ @_ @algo sk msg
 {-# INLINE sign #-}
 
 -- | 'sign' function specialized for 'SHA256' cryptographic algorithm.
@@ -69,11 +75,16 @@ signSHA256 = sign @SHA256
 
 -- | Part of the HTTP request that will be signed.
 data RequestPayload = RequestPayload
-    { rpMethod  :: !Method  -- ^ HTTP method
-    , rpContent :: !ByteString  -- ^ Raw content of HTTP body
-    , rpHeaders :: !RequestHeaders  -- ^ All headers of HTTP request
-    , rpRawUrl  :: !ByteString  -- ^ Raw request URL with host, path pieces and parameters
-    } deriving (Show)
+    { rpMethod :: !Method
+    -- ^ HTTP method
+    , rpContent :: !ByteString
+    -- ^ Raw content of HTTP body
+    , rpHeaders :: !RequestHeaders
+    -- ^ All headers of HTTP request
+    , rpRawUrl :: !ByteString
+    -- ^ Raw request URL with host, path pieces and parameters
+    }
+    deriving (Show)
 
 {- | This function signs HTTP request according to the following algorithm:
 
@@ -104,20 +115,25 @@ hostfoo.bar.com
 user-agentMozilla/5.0
 @
 -}
-requestSignature
-    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey  -- ^ Secret key to use
-    -> RequestPayload  -- ^ Payload to sign
-    -> Signature
+requestSignature ::
+    -- | Signing function
+    (SecretKey -> ByteString -> Signature) ->
+    -- | Secret key to use
+    SecretKey ->
+    -- | Payload to sign
+    RequestPayload ->
+    Signature
 requestSignature signer sk = signer sk . createStringToSign
   where
     createStringToSign :: RequestPayload -> ByteString
-    createStringToSign RequestPayload{..} = BS.intercalate "\n"
-        [ rpMethod
-        , hashMD5 rpContent
-        , normalizeHeaders rpHeaders
-        , rpRawUrl
-        ]
+    createStringToSign RequestPayload{..} =
+        BS.intercalate
+            "\n"
+            [ rpMethod
+            , hashMD5 rpContent
+            , normalizeHeaders rpHeaders
+            , rpRawUrl
+            ]
 
     normalizeHeaders :: [Header] -> ByteString
     normalizeHeaders = BS.intercalate "\n" . sort . map normalize
@@ -152,26 +168,30 @@ Authentication: HMAC <signature>
 It checks whether @<signature>@ is true request signature. Function returns 'Nothing'
 if it is true, and 'Just' error message otherwise.
 -}
-verifySignatureHmac
-    :: (SecretKey -> ByteString -> Signature)  -- ^ Signing function
-    -> SecretKey  -- ^ Secret key that was used for signing 'Request'
-    -> RequestPayload
-    -> Maybe LBS.ByteString
+verifySignatureHmac ::
+    -- | Signing function
+    (SecretKey -> ByteString -> Signature) ->
+    -- | Secret key that was used for signing 'Request'
+    SecretKey ->
+    RequestPayload ->
+    Maybe LBS.ByteString
 verifySignatureHmac signer sk signedPayload = case unsignedPayload of
-    Left err         -> Just err
-    Right (pay, sig) -> if sig == requestSignature signer sk pay
-        then Nothing
-        else Just "Signatures don't match"
+    Left err -> Just err
+    Right (pay, sig) ->
+        if sig == requestSignature signer sk pay
+            then Nothing
+            else Just "Signatures don't match"
   where
     -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
     unsignedPayload :: Either LBS.ByteString (RequestPayload, Signature)
     unsignedPayload = case extractOn isAuthHeader $ rpHeaders signedPayload of
         (Nothing, _) -> Left "No 'Authentication' header"
         (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
-            Just sig -> Right
-                ( signedPayload { rpHeaders = headers }
-                , Signature sig
-                )
+            Just sig ->
+                Right
+                    ( signedPayload{rpHeaders = headers}
+                    , Signature sig
+                    )
             Nothing -> Left "Can not strip 'HMAC' prefix in header"
 
 ----------------------------------------------------------------------------
@@ -197,6 +217,6 @@ hashMD5 = BA.convert . hash @_ @MD5
 extractOn :: (a -> Bool) -> [a] -> (Maybe a, [a])
 extractOn p l =
     let (before, after) = break p l
-    in case uncons after of
-        Nothing      -> (Nothing, l)
-        Just (x, xs) -> (Just x, before ++ xs)
+     in case uncons after of
+            Nothing -> (Nothing, l)
+            Just (x, xs) -> (Just x, before ++ xs)

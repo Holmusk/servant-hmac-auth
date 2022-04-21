@@ -94,7 +94,12 @@ test-suite servant-hmac-auth-test
                      , filepath
                      , hspec
                      , hspec-golden ^>= 0.2
+                     , http-client >= 0.6.4 && < 0.8
                      , http-types ^>= 0.12
+                     , servant-client ^>= 0.18 || ^>= 0.19
+                     , servant-server ^>= 0.18 || ^>= 0.19
                      , text
+                     , warp ^>= 3.3
   other-modules:       Servant.Auth.Hmac.CryptoSpec
+                       Servant.Auth.HmacSpec
   build-tool-depends:  hspec-discover:hspec-discover == 2.*
