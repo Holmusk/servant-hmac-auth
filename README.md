@@ -7,19 +7,42 @@
 
 Servant authentication with HMAC
 
+## New experimental API notice
+
+A new experimental API is being tested with the following features:
+
+- Include the MD5 hashing of the request's content into the signature algorithm.
+- Identify the user in the request and pick the appropriate secret key for
+  authentication.
+
+The previous API is still available but may be deprecated and remove in future
+versions.
+
+### Note on large requests and streaming
+
+The authentication relies on various information about the request such as its
+body, more specifically the MD5 hash of the entire body. As a consequence, the
+library will consume the request's content in its entirety before transfering it
+to the underlying client or server. Thus, very large requests will be buffered
+in-memory while hashing, and streaming won't work as expected as all the chunks
+will be transfered at once only after signing. This is true whether the client /
+server actually consumes the content or not. This library is therefore not
+suited for those use cases.
+
+Note that this also comes with a DoS risk as very large requests will be stored
+in memory for signature and consumption. Users need to keep that in mind and
+take the necessary precautions to prevent those.
+
 ## Example
 
 In this section, we will introduce the client-server example.
 To run it locally you can:
 
 ```shell
-$ cabal new-build
-$ cabal new-exec readme
+cabal run readme
 ```
 
-So,it will run this on your machine.
-
-### Setting up
+## Setting up
 
 Since this tutorial is written using Literate Haskell, first, let's write all necessary pragmas and imports.
 

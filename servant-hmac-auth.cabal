@@ -23,6 +23,16 @@ source-repository head
   type:                git
   location:            https://github.com/holmusk/servant-hmac-auth.git
 
+flag build-readme
+  description:         Build the example in the README.md file.
+  default:             False
+  manual:              True
+
+flag build-examples
+  description:         Build the examples in the examples directory.
+  default:             False
+  manual:              True
+
 common common-options
   build-depends:       base >= 4.11.1.0 && < 4.16
 
@@ -64,10 +74,11 @@ library
   exposed-modules:     Servant.Auth.Hmac
                            Servant.Auth.Hmac.Crypto
                            Servant.Auth.Hmac.Client
+                           Servant.Auth.Hmac.Secure
                            Servant.Auth.Hmac.Server
+  other-modules:       Servant.Auth.Hmac.Internal
 
   build-depends:       base64-bytestring >= 1.0 && <= 2
-                     , binary ^>= 0.8
                      , bytestring ^>= 0.10
                      , case-insensitive ^>= 1.2
                      , containers >= 0.5.7 && < 0.7
@@ -76,12 +87,51 @@ library
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.17
                      , mtl ^>= 2.2.2
-                     , servant ^>= 0.18 || ^>= 0.19
-                     , servant-client ^>= 0.18 || ^>= 0.19
-                     , servant-client-core ^>= 0.18 || ^>= 0.19
-                     , servant-server ^>= 0.18 || ^>= 0.19
+                     , servant >= 0.18 && < 0.20
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
                      , transformers ^>= 0.5
                      , wai ^>= 3.2.2.1
+executable readme
+  import:              common-options
+  if !flag(build-readme)
+    buildable:         False
+  main-is:             README.lhs
+  build-depends:       aeson >= 1.4 && < 1.6
+                     , http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
+                     , servant-hmac-auth
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
+                     , warp ^>= 3.3.5
+  build-tool-depends:  markdown-unlit:markdown-unlit
+  ghc-options:         -pgmL markdown-unlit
+
+executable examples-client
+  import:              common-options
+  if !flag(build-examples)
+    buildable:         False
+  main-is:             Main.hs
+  hs-source-dirs:      examples/client
+  build-depends:       http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
+                     , servant-hmac-auth
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
+
+executable examples-server
+  import:              common-options
+  if !flag(build-examples)
+    buildable:         False
+  main-is:             Main.hs
+  hs-source-dirs:      examples/server
+  build-depends:       http-client >= 0.6.4 && < 0.8
+                     , servant >= 0.18 && < 0.20
+                     , servant-hmac-auth
+                     , servant-server
+                     , wai ^>= 3.2.2.1
+                     , warp ^>= 3.3
 
 test-suite servant-hmac-auth-test
   import:              common-options
@@ -96,10 +146,15 @@ test-suite servant-hmac-auth-test
                      , hspec-golden ^>= 0.2
                      , http-client >= 0.6.4 && < 0.8
                      , http-types ^>= 0.12
-                     , servant-client ^>= 0.18 || ^>= 0.19
-                     , servant-server ^>= 0.18 || ^>= 0.19
+                     , servant >= 0.18 && < 0.20
+                     , servant-client >= 0.18 && < 0.20
+                     , servant-client-core >= 0.18 && < 0.20
+                     , servant-server >= 0.18 && < 0.20
                      , text
+                     , transformers ^>= 0.5
+                     , wai ^>= 3.2.2.1
                      , warp ^>= 3.3
   other-modules:       Servant.Auth.Hmac.CryptoSpec
+                       Servant.Auth.Hmac.SecureSpec
                        Servant.Auth.HmacSpec
   build-tool-depends:  hspec-discover:hspec-discover == 2.*

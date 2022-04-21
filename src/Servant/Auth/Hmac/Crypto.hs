@@ -151,7 +151,8 @@ whitelistHeaders :: [HeaderName]
 whitelistHeaders =
     [ authHeaderName
     , "Host"
-    , "Accept-Encoding"
+    -- FIXME Encoding should be transparent to the Servant HMAC handler. Is there another reason why it is required for the signature?
+    -- , "Accept-Encoding"
     ]
 
 -- | Keeps only headers from 'whitelistHeaders'.
