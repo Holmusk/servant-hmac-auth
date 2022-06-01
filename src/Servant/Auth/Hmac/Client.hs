@@ -41,7 +41,6 @@ import Servant.Auth.Hmac.Crypto (
     RequestPayload (..),
     SecretKey,
     Signature (..),
-    authHeaderName,
     keepWhitelistedHeaders,
     requestSignature,
     signSHA256,
@@ -49,6 +48,7 @@ import Servant.Auth.Hmac.Crypto (
 
 import qualified Network.HTTP.Client as Client
 import qualified Servant.Client.Core as Servant
+import Network.HTTP.Types
 
 -- | Environment for 'HmacClientM'. Contains all required settings for hmac client.
 data HmacSettings = HmacSettings
@@ -59,6 +59,8 @@ data HmacSettings = HmacSettings
     , hmacRequestHook :: Maybe (Servant.Request -> ClientM ())
     -- ^ Function to call for every request after this request is signed.
     -- Useful for debugging.
+    , hmacAuthHeaderName :: HeaderName
+    -- ^ Header name to use to get request signature
     }
 
 {- | Default 'HmacSettings' with the following configuration:
@@ -66,6 +68,7 @@ data HmacSettings = HmacSettings
 1. Signing function is 'signSHA256'.
 2. Secret key is provided.
 3. 'hmacRequestHook' is 'Nothing'.
+4. 'hmacAuthHeaderName' is 'Authentication'.
 -}
 defaultHmacSettings :: SecretKey -> HmacSettings
 defaultHmacSettings sk =
@@ -73,6 +76,7 @@ defaultHmacSettings sk =
         { hmacSigner = signSHA256
         , hmacSecretKey = sk
         , hmacRequestHook = Nothing
+        , hmacAuthHeaderName = "Authentication"
         }
 
 {- | @newtype@ wrapper over 'ClientM' that signs all outgoing requests
@@ -90,7 +94,7 @@ hmacClientSign :: Servant.Request -> HmacClientM Servant.Request
 hmacClientSign req = HmacClientM $ do
     HmacSettings{..} <- ask
     url <- lift $ asks baseUrl
-    let signedRequest = signRequestHmac hmacSigner hmacSecretKey url req
+    let signedRequest = signRequestHmac hmacAuthHeaderName hmacSigner hmacSecretKey url req
     case hmacRequestHook of
         Nothing -> pure ()
         Just hook -> lift $ hook signedRequest
@@ -118,13 +122,13 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 -- Internals
 ----------------------------------------------------------------------------
 
-servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
-servantRequestToPayload url sreq =
+servantRequestToPayload :: HeaderName -> BaseUrl -> Servant.Request -> RequestPayload
+servantRequestToPayload authHeaderName url sreq =
     RequestPayload
         { rpMethod = Client.method req
         , rpContent = "" -- toBsBody $ Client.requestBody req
         , rpHeaders =
-            keepWhitelistedHeaders $
+            keepWhitelistedHeaders authHeaderName $
                 ("Host", hostAndPort) :
                 ("Accept-Encoding", "gzip") :
                 Client.requestHeaders req
@@ -162,6 +166,8 @@ Authentication: HMAC <signature>
 @
 -}
 signRequestHmac ::
+    -- | Authentication header name
+    HeaderName ->
     -- | Signing function
     (SecretKey -> ByteString -> Signature) ->
     -- | Secret key that was used for signing 'Request'
@@ -172,8 +178,8 @@ signRequestHmac ::
     Servant.Request ->
     -- | Signed request
     Servant.Request
-signRequestHmac signer sk url req = do
-    let payload = servantRequestToPayload url req
+signRequestHmac authHeaderName signer sk url req = do
+    let payload = servantRequestToPayload authHeaderName url req
     let signature = requestSignature signer sk payload
     let authHead = (authHeaderName, "HMAC " <> unSignature signature)
     req{Servant.requestHeaders = authHead <| Servant.requestHeaders req}

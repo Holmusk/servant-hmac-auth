@@ -77,7 +77,7 @@ securedEchoServer :: Server EchoApi
 securedEchoServer = const echoBack
 
 securedEchoApp :: SecretKey -> Application
-securedEchoApp sk = serveWithContext (Proxy @EchoApi) (hmacAuthServerContext signSHA256 sk) securedEchoServer
+securedEchoApp sk = serveWithContext (Proxy @EchoApi) (hmacAuthServerContext "Authentication" signSHA256 sk) securedEchoServer
 
 withSecuredEchoApp :: SecretKey -> (Warp.Port -> IO ()) -> IO ()
 withSecuredEchoApp sk = Warp.testWithApplication (pure $ securedEchoApp sk)
