@@ -19,7 +19,8 @@ module Servant.Auth.Hmac.Crypto (
     keepWhitelistedHeaders',
 
     -- * Internal
-    defaultAuthHeaderName
+    defaultAuthHeaderName,
+    unsignedPayload
 ) where
 
 import Crypto.Hash (hash)
@@ -35,7 +36,6 @@ import qualified Data.ByteArray as BA (convert)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy as Lazy
 
 -- | The wraper for the secret key.
 newtype SecretKey = SecretKey
@@ -179,12 +179,14 @@ It checks whether @<signature>@ is true request signature. Function returns 'Not
 if it is true, and 'Just' error message otherwise.
 -}
 
-verifySignatureHmac :: (SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Maybe Lazy.ByteString
-verifySignatureHmac = verifySignatureHmac' requestSignature defaultAuthHeaderName
+verifySignatureHmac :: (SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Maybe LBS.ByteString
+verifySignatureHmac = verifySignatureHmac' requestSignature unsignedPayload defaultAuthHeaderName
 
 verifySignatureHmac' ::
-    -- | Function to extract signature from request: takes signing function, secret key, and request
+    -- | Function to generate signature from request: takes signing function, secret key, and request
     ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
+    -- | Function to extract signature from request
+    (RequestPayload -> HeaderName -> Either LBS.ByteString (RequestPayload, Signature)) ->
     -- | Auth header name
     HeaderName ->
     -- | Signing function
@@ -193,24 +195,12 @@ verifySignatureHmac' ::
     SecretKey ->
     RequestPayload ->
     Maybe LBS.ByteString
-verifySignatureHmac' mkRequestSignature authHeaderName signer sk signedPayload = case unsignedPayload of
+verifySignatureHmac' mkRequestSignature extractSignature authHeaderName signer sk signedPayload = case extractSignature signedPayload authHeaderName of
     Left err -> Just err
     Right (pay, sig) ->
         if sig == mkRequestSignature signer sk pay
             then Nothing
             else Just "Signatures don't match"
-  where
-    -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
-    unsignedPayload :: Either LBS.ByteString (RequestPayload, Signature)
-    unsignedPayload = case extractOn (isAuthHeader authHeaderName) $ rpHeaders signedPayload of
-        (Nothing, _) -> Left $ "No '" <> Lazy.fromStrict (original authHeaderName) <> "' header"
-        (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
-            Just sig ->
-                Right
-                    ( signedPayload{rpHeaders = headers}
-                    , Signature sig
-                    )
-            Nothing -> Left "Can not strip 'HMAC' prefix in header"
 
 ----------------------------------------------------------------------------
 -- Internals
@@ -238,3 +228,14 @@ extractOn p l =
      in case uncons after of
             Nothing -> (Nothing, l)
             Just (x, xs) -> (Just x, before ++ xs)
+
+unsignedPayload :: RequestPayload -> HeaderName -> Either LBS.ByteString (RequestPayload, Signature)
+unsignedPayload signedPayload authHeaderName = case extractOn (isAuthHeader authHeaderName) $ rpHeaders signedPayload of
+    (Nothing, _) -> Left $ "No '" <> LBS.fromStrict (original authHeaderName) <> "' header"
+    (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
+        Just sig ->
+            Right
+                ( signedPayload{rpHeaders = headers}
+                , Signature sig
+                )
+        Nothing -> Left "Can not strip 'HMAC' prefix in header"
