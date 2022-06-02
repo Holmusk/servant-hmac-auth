@@ -41,10 +41,9 @@ import Servant.Auth.Hmac.Crypto (
     RequestPayload (..),
     SecretKey,
     Signature (..),
-    keepWhitelistedHeaders,
     requestSignature,
-    signSHA256, 
-    defaultAuthHeaderName
+    signSHA256,
+    defaultAuthHeaderName, keepWhitelistedHeaders'
  )
 
 import qualified Network.HTTP.Client as Client
@@ -129,7 +128,7 @@ servantRequestToPayload authHeaderName url sreq =
         { rpMethod = Client.method req
         , rpContent = "" -- toBsBody $ Client.requestBody req
         , rpHeaders =
-            keepWhitelistedHeaders authHeaderName $
+            keepWhitelistedHeaders' authHeaderName $
                 ("Host", hostAndPort) :
                 ("Accept-Encoding", "gzip") :
                 Client.requestHeaders req
@@ -164,8 +163,9 @@ servantRequestToPayload authHeaderName url sreq =
 
 @
 Authentication: HMAC <signature>
-@
+
 -}
+
 signRequestHmac ::
     -- | Authentication header name
     HeaderName ->

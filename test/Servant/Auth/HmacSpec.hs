@@ -23,11 +23,10 @@ import Servant.Auth.Hmac (
     HmacAuth,
     SecretKey (SecretKey),
     defaultHmacSettings,
-    hmacAuthServerContext,
     hmacClient,
     runHmacClient,
-    signSHA256, 
-    defaultAuthHeaderName
+    signSHA256,
+    defaultAuthHeaderName, hmacAuthServerContext'
  )
 import Servant.Client (
     BaseUrl (baseUrlPort),
@@ -78,7 +77,7 @@ securedEchoServer :: Server EchoApi
 securedEchoServer = const echoBack
 
 securedEchoApp :: SecretKey -> Application
-securedEchoApp sk = serveWithContext (Proxy @EchoApi) (hmacAuthServerContext defaultAuthHeaderName signSHA256 sk) securedEchoServer
+securedEchoApp sk = serveWithContext (Proxy @EchoApi) (hmacAuthServerContext' defaultAuthHeaderName signSHA256 sk) securedEchoServer
 
 withSecuredEchoApp :: SecretKey -> (Warp.Port -> IO ()) -> IO ()
 withSecuredEchoApp sk = Warp.testWithApplication (pure $ securedEchoApp sk)

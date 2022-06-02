@@ -12,8 +12,11 @@ module Servant.Auth.Hmac.Crypto (
     RequestPayload (..),
     requestSignature,
     verifySignatureHmac,
+    verifySignatureHmac',
     whitelistHeaders,
+    whitelistHeaders',
     keepWhitelistedHeaders,
+    keepWhitelistedHeaders',
 
     -- * Internal
     defaultAuthHeaderName
@@ -148,16 +151,22 @@ requestSignature signer sk = signer sk . createStringToSign
 2. @Host@
 3. @Accept-Encoding@
 -}
-whitelistHeaders :: HeaderName -> [HeaderName]
-whitelistHeaders authHeaderName =
+whitelistHeaders :: [HeaderName]
+whitelistHeaders = whitelistHeaders' defaultAuthHeaderName
+
+whitelistHeaders' :: HeaderName -> [HeaderName]
+whitelistHeaders' authHeaderName =
     [ authHeaderName
     , "Host"
     , "Accept-Encoding"
     ]
 
 -- | Keeps only headers from 'whitelistHeaders'.
-keepWhitelistedHeaders :: HeaderName -> [Header] -> [Header]
-keepWhitelistedHeaders authHeaderName = filter (\(name, _) -> name `elem` whitelistHeaders authHeaderName)
+keepWhitelistedHeaders :: [Header] -> [Header]
+keepWhitelistedHeaders = keepWhitelistedHeaders' defaultAuthHeaderName
+
+keepWhitelistedHeaders' :: HeaderName -> [Header] -> [Header]
+keepWhitelistedHeaders' authHeaderName = filter (\(name, _) -> name `elem` whitelistHeaders' authHeaderName)
 
 {- | This function takes signing function @signer@ and secret key and expects
 that given 'Request' has header:
@@ -169,7 +178,11 @@ Authentication: HMAC <signature>
 It checks whether @<signature>@ is true request signature. Function returns 'Nothing'
 if it is true, and 'Just' error message otherwise.
 -}
-verifySignatureHmac ::
+
+verifySignatureHmac :: (SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Maybe Lazy.ByteString
+verifySignatureHmac = verifySignatureHmac' defaultAuthHeaderName
+
+verifySignatureHmac' ::
     -- | Auth header name
     HeaderName ->
     -- | Signing function
@@ -178,7 +191,7 @@ verifySignatureHmac ::
     SecretKey ->
     RequestPayload ->
     Maybe LBS.ByteString
-verifySignatureHmac authHeaderName signer sk signedPayload = case unsignedPayload of
+verifySignatureHmac' authHeaderName signer sk signedPayload = case unsignedPayload of
     Left err -> Just err
     Right (pay, sig) ->
         if sig == requestSignature signer sk pay
