@@ -43,7 +43,8 @@ import Servant.Auth.Hmac.Crypto (
     Signature (..),
     keepWhitelistedHeaders,
     requestSignature,
-    signSHA256,
+    signSHA256, 
+    defaultAuthHeaderName
  )
 
 import qualified Network.HTTP.Client as Client
@@ -76,7 +77,7 @@ defaultHmacSettings sk =
         { hmacSigner = signSHA256
         , hmacSecretKey = sk
         , hmacRequestHook = Nothing
-        , hmacAuthHeaderName = "Authentication"
+        , hmacAuthHeaderName = defaultAuthHeaderName
         }
 
 {- | @newtype@ wrapper over 'ClientM' that signs all outgoing requests

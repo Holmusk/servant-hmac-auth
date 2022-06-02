@@ -14,6 +14,9 @@ module Servant.Auth.Hmac.Crypto (
     verifySignatureHmac,
     whitelistHeaders,
     keepWhitelistedHeaders,
+
+    -- * Internal
+    defaultAuthHeaderName
 ) where
 
 import Crypto.Hash (hash)
@@ -197,6 +200,9 @@ verifySignatureHmac authHeaderName signer sk signedPayload = case unsignedPayloa
 ----------------------------------------------------------------------------
 -- Internals
 ----------------------------------------------------------------------------
+
+defaultAuthHeaderName :: HeaderName
+defaultAuthHeaderName = "Authentication"
 
 isAuthHeader :: HeaderName -> Header -> Bool
 isAuthHeader name = (== name) . fst
