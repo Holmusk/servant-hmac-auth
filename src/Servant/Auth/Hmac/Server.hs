@@ -27,7 +27,7 @@ import Servant.Server.Experimental.Auth (AuthHandler, AuthServerData, mkAuthHand
 import Servant.Auth.Hmac.Crypto (
     RequestPayload (..),
     SecretKey,
-    Signature, verifySignatureHmac', keepWhitelistedHeaders', defaultAuthHeaderName
+    Signature, verifySignatureHmac', keepWhitelistedHeaders', defaultAuthHeaderName, requestSignature
  )
 
 import qualified Network.Wai as Wai (Request)
@@ -42,9 +42,11 @@ type HmacAuthContextHandlers = '[HmacAuthHandler]
 type HmacAuthContext = Context HmacAuthContextHandlers
 
 hmacAuthServerContext :: (SecretKey -> ByteString -> Signature) -> SecretKey -> HmacAuthContext
-hmacAuthServerContext = hmacAuthServerContext' defaultAuthHeaderName
+hmacAuthServerContext = hmacAuthServerContext' requestSignature defaultAuthHeaderName
 
 hmacAuthServerContext' ::
+    -- | Function to extract signature from request: takes signing function, secret key, and request
+    ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
     -- | Auth header name
     HeaderName ->
     -- | Signing function
@@ -52,13 +54,15 @@ hmacAuthServerContext' ::
     -- | Secret key that was used for signing 'Request'
     SecretKey ->
     HmacAuthContext
-hmacAuthServerContext' authHeaderName signer sk = hmacAuthHandler' authHeaderName signer sk :. EmptyContext
+hmacAuthServerContext' mkRequestSignature authHeaderName signer sk = hmacAuthHandler' mkRequestSignature authHeaderName signer sk :. EmptyContext
 
 hmacAuthHandler :: (SecretKey -> ByteString -> Signature) -> SecretKey -> HmacAuthHandler
-hmacAuthHandler = hmacAuthHandler' defaultAuthHeaderName
+hmacAuthHandler = hmacAuthHandler' requestSignature defaultAuthHeaderName
 
 -- | Create 'HmacAuthHandler' from signing function and secret key.
 hmacAuthHandler' ::
+    -- | Function to extract signature from request: takes signing function, secret key, and request
+    ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
     -- | Auth header name
     HeaderName ->
     -- | Signing function
@@ -66,7 +70,7 @@ hmacAuthHandler' ::
     -- | Secret key that was used for signing 'Request'
     SecretKey ->
     HmacAuthHandler
-hmacAuthHandler' authHeaderName = hmacAuthHandlerMap' authHeaderName pure
+hmacAuthHandler' mkRequestSignature authHeaderName = hmacAuthHandlerMap' mkRequestSignature authHeaderName pure
 
 {- | Like 'hmacAuthHandler' but allows to specify additional mapping function
 for 'Wai.Request'. This can be useful if you want to print incoming request (for
@@ -75,9 +79,11 @@ applied before signature verification.
 -}
 
 hmacAuthHandlerMap :: (Wai.Request -> Handler Wai.Request) -> (SecretKey -> ByteString -> Signature) -> SecretKey -> HmacAuthHandler
-hmacAuthHandlerMap = hmacAuthHandlerMap' defaultAuthHeaderName
+hmacAuthHandlerMap = hmacAuthHandlerMap' requestSignature defaultAuthHeaderName
 
 hmacAuthHandlerMap' ::
+    -- | Function to extract signature from request: takes signing function, secret key, and request
+    ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
     -- | Auth header name 
     HeaderName ->
     -- | Request mapper
@@ -87,13 +93,13 @@ hmacAuthHandlerMap' ::
     -- | Secret key that was used for signing 'Request'
     SecretKey ->
     HmacAuthHandler
-hmacAuthHandlerMap' authHeaderName mapper signer sk = mkAuthHandler handler
+hmacAuthHandlerMap' mkRequestSignature authHeaderName mapper signer sk = mkAuthHandler handler
   where
     handler :: Wai.Request -> Handler ()
     handler req = do
         newReq <- mapper req
-        let payload = waiRequestToPayload' authHeaderName newReq
-        let verification = verifySignatureHmac' authHeaderName signer sk payload
+        let payload = waiRequestToPayload authHeaderName newReq
+        let verification = verifySignatureHmac' mkRequestSignature authHeaderName signer sk payload
         case verification of
             Nothing -> pure ()
             Just bs -> throwError $ err401{errBody = bs}
@@ -111,12 +117,9 @@ hmacAuthHandlerMap' authHeaderName mapper signer sk = mkAuthHandler handler
 --         then pure []
 --         else (chunk:) <$> getChunks
 
-waiRequestToPayload :: Wai.Request -> RequestPayload
-waiRequestToPayload = waiRequestToPayload' defaultAuthHeaderName
-
-waiRequestToPayload' :: HeaderName -> Wai.Request -> RequestPayload
+waiRequestToPayload :: HeaderName -> Wai.Request -> RequestPayload
 -- waiRequestToPayload req = getWaiRequestBody req >>= \body -> pure RequestPayload
-waiRequestToPayload' authHeaderName req =
+waiRequestToPayload authHeaderName req =
     RequestPayload
         { rpMethod = requestMethod req
         , rpContent = ""

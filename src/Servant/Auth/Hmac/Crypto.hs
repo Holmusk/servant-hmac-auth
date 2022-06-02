@@ -180,9 +180,11 @@ if it is true, and 'Just' error message otherwise.
 -}
 
 verifySignatureHmac :: (SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Maybe Lazy.ByteString
-verifySignatureHmac = verifySignatureHmac' defaultAuthHeaderName
+verifySignatureHmac = verifySignatureHmac' requestSignature defaultAuthHeaderName
 
 verifySignatureHmac' ::
+    -- | Function to extract signature from request: takes signing function, secret key, and request
+    ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
     -- | Auth header name
     HeaderName ->
     -- | Signing function
@@ -191,10 +193,10 @@ verifySignatureHmac' ::
     SecretKey ->
     RequestPayload ->
     Maybe LBS.ByteString
-verifySignatureHmac' authHeaderName signer sk signedPayload = case unsignedPayload of
+verifySignatureHmac' mkRequestSignature authHeaderName signer sk signedPayload = case unsignedPayload of
     Left err -> Just err
     Right (pay, sig) ->
-        if sig == requestSignature signer sk pay
+        if sig == mkRequestSignature signer sk pay
             then Nothing
             else Just "Signatures don't match"
   where
