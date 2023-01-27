@@ -1,4 +1,4 @@
-resolver: lts-18.21
+resolver: lts-18.28
 
 extra-deps:
   - cryptonite-0.29@sha256:147724f6a8e4394fcbd51bf52aba7a8b92d3fc8f42055cd6ca9486655e2ab614,18312
