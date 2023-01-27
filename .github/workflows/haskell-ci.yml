@@ -23,17 +23,17 @@ jobs:
           - 9.2.5
           - 9.4.4
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-      - uses: haskell/actions/setup@v1
+      - uses: haskell/actions/setup@v2
         id: setup-haskell-cabal
         name: Setup Haskell Cabal
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         name: Cache ~/.cabal/store
         with:
           path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -59,15 +59,15 @@ jobs:
           - stack-9.0.2.yaml
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
 
-      - uses: haskell/actions/setup@v1
+      - uses: haskell/actions/setup@v2
         name: Setup Haskell Stack
         with:
           stack-version: ${{ matrix.stack }}
 
-      - uses: actions/cache@v2.1.6
+      - uses: actions/cache@v3
         name: Cache ~/.stack
         with:
           path: ~/.stack
