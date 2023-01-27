@@ -16,7 +16,7 @@ The change log is available [on GitHub][2].
   This library will do so automatically.
 
 * [#53](https://github.com/Holmusk/servant-hmac-auth/pull/53):
-  Servant 0.19 support (Support servant-0.19)
+  Servant 0.19 support
 
 * [#51](https://github.com/Holmusk/servant-hmac-auth/pull/51):
   Allow compilation with ghc 8.10.7
