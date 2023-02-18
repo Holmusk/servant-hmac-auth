@@ -12,11 +12,15 @@ module Servant.Auth.Hmac.Crypto (
     RequestPayload (..),
     requestSignature,
     verifySignatureHmac,
+    verifySignatureHmac',
     whitelistHeaders,
+    whitelistHeaders',
     keepWhitelistedHeaders,
+    keepWhitelistedHeaders',
 
-    -- * Internals
-    authHeaderName,
+    -- * Internal
+    defaultAuthHeaderName,
+    unsignedPayload
 ) where
 
 import Crypto.Hash (hash)
@@ -24,7 +28,7 @@ import Crypto.Hash.Algorithms (MD5, SHA256)
 import Crypto.Hash.IO (HashAlgorithm)
 import Crypto.MAC.HMAC (HMAC (hmacGetDigest), hmac)
 import Data.ByteString (ByteString)
-import Data.CaseInsensitive (foldedCase)
+import Data.CaseInsensitive (foldedCase, CI (original))
 import Data.List (sort, uncons)
 import Network.HTTP.Types (Header, HeaderName, Method, RequestHeaders)
 
@@ -143,12 +147,15 @@ requestSignature signer sk = signer sk . createStringToSign
 
 {- | White-listed headers. Only these headers will be taken into consideration:
 
-1. @Authentication@
+1. An authentication header of your choosing
 2. @Host@
 3. @Accept-Encoding@
 -}
 whitelistHeaders :: [HeaderName]
-whitelistHeaders =
+whitelistHeaders = whitelistHeaders' defaultAuthHeaderName
+
+whitelistHeaders' :: HeaderName -> [HeaderName]
+whitelistHeaders' authHeaderName =
     [ authHeaderName
     , "Host"
     , "Accept-Encoding"
@@ -156,7 +163,10 @@ whitelistHeaders =
 
 -- | Keeps only headers from 'whitelistHeaders'.
 keepWhitelistedHeaders :: [Header] -> [Header]
-keepWhitelistedHeaders = filter (\(name, _) -> name `elem` whitelistHeaders)
+keepWhitelistedHeaders = keepWhitelistedHeaders' defaultAuthHeaderName
+
+keepWhitelistedHeaders' :: HeaderName -> [Header] -> [Header]
+keepWhitelistedHeaders' authHeaderName = filter (\(name, _) -> name `elem` whitelistHeaders' authHeaderName)
 
 {- | This function takes signing function @signer@ and secret key and expects
 that given 'Request' has header:
@@ -168,41 +178,39 @@ Authentication: HMAC <signature>
 It checks whether @<signature>@ is true request signature. Function returns 'Nothing'
 if it is true, and 'Just' error message otherwise.
 -}
-verifySignatureHmac ::
+
+verifySignatureHmac :: (SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Maybe LBS.ByteString
+verifySignatureHmac = verifySignatureHmac' requestSignature unsignedPayload defaultAuthHeaderName
+
+verifySignatureHmac' ::
+    -- | Function to generate signature from request: takes signing function, secret key, and request
+    ((SecretKey -> ByteString -> Signature) -> SecretKey -> RequestPayload -> Signature) ->
+    -- | Function to extract signature from request
+    (RequestPayload -> HeaderName -> Either LBS.ByteString (RequestPayload, Signature)) ->
+    -- | Auth header name
+    HeaderName ->
     -- | Signing function
     (SecretKey -> ByteString -> Signature) ->
     -- | Secret key that was used for signing 'Request'
     SecretKey ->
     RequestPayload ->
     Maybe LBS.ByteString
-verifySignatureHmac signer sk signedPayload = case unsignedPayload of
+verifySignatureHmac' mkRequestSignature extractSignature authHeaderName signer sk signedPayload = case extractSignature signedPayload authHeaderName of
     Left err -> Just err
     Right (pay, sig) ->
-        if sig == requestSignature signer sk pay
+        if sig == mkRequestSignature signer sk pay
             then Nothing
             else Just "Signatures don't match"
-  where
-    -- Extracts HMAC signature from request and returns request with @authHeaderName@ header
-    unsignedPayload :: Either LBS.ByteString (RequestPayload, Signature)
-    unsignedPayload = case extractOn isAuthHeader $ rpHeaders signedPayload of
-        (Nothing, _) -> Left "No 'Authentication' header"
-        (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
-            Just sig ->
-                Right
-                    ( signedPayload{rpHeaders = headers}
-                    , Signature sig
-                    )
-            Nothing -> Left "Can not strip 'HMAC' prefix in header"
 
 ----------------------------------------------------------------------------
 -- Internals
 ----------------------------------------------------------------------------
 
-authHeaderName :: HeaderName
-authHeaderName = "Authentication"
+defaultAuthHeaderName :: HeaderName
+defaultAuthHeaderName = "Authentication"
 
-isAuthHeader :: Header -> Bool
-isAuthHeader = (== authHeaderName) . fst
+isAuthHeader :: HeaderName -> Header -> Bool
+isAuthHeader name = (== name) . fst
 
 hashMD5 :: ByteString -> ByteString
 hashMD5 = BA.convert . hash @_ @MD5
@@ -220,3 +228,14 @@ extractOn p l =
      in case uncons after of
             Nothing -> (Nothing, l)
             Just (x, xs) -> (Just x, before ++ xs)
+
+unsignedPayload :: RequestPayload -> HeaderName -> Either LBS.ByteString (RequestPayload, Signature)
+unsignedPayload signedPayload authHeaderName = case extractOn (isAuthHeader authHeaderName) $ rpHeaders signedPayload of
+    (Nothing, _) -> Left $ "No '" <> LBS.fromStrict (original authHeaderName) <> "' header"
+    (Just (_, val), headers) -> case BS.stripPrefix "HMAC " val of
+        Just sig ->
+            Right
+                ( signedPayload{rpHeaders = headers}
+                , Signature sig
+                )
+        Nothing -> Left "Can not strip 'HMAC' prefix in header"

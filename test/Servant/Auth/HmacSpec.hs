@@ -23,10 +23,9 @@ import Servant.Auth.Hmac (
     HmacAuth,
     SecretKey (SecretKey),
     defaultHmacSettings,
-    hmacAuthServerContext,
     hmacClient,
     runHmacClient,
-    signSHA256,
+    signSHA256, hmacAuthServerContext
  )
 import Servant.Client (
     BaseUrl (baseUrlPort),
