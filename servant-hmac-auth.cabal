@@ -75,10 +75,10 @@ library
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.19
                      , mtl ^>= 2.2.2 || ^>= 2.3
-                     , servant ^>= 0.18 || ^>= 0.19 || ^>= 0.20
+                     , servant ^>= 0.19 || ^>= 0.20
                      , servant-client ^>= 0.19 || ^>= 0.20
-                     , servant-client-core ^>= 0.18 || ^>= 0.19 || ^>= 0.20
-                     , servant-server ^>= 0.18 || ^>= 0.19 || ^>= 0.20
+                     , servant-client-core ^>= 0.19 || ^>= 0.20
+                     , servant-server ^>= 0.19 || ^>= 0.20
                      , transformers ^>= 0.5 || ^>= 0.6
                      , wai ^>= 3.2.2.1
 
@@ -96,7 +96,7 @@ test-suite servant-hmac-auth-test
                      , http-client >= 0.6.4 && < 0.8
                      , http-types ^>= 0.12
                      , servant-client ^>= 0.19 || ^>= 0.20
-                     , servant-server ^>= 0.18 || ^>= 0.19 || ^>= 0.20
+                     , servant-server ^>= 0.19 || ^>= 0.20
                      , text
                      , warp ^>= 3.3
   other-modules:       Servant.Auth.Hmac.CryptoSpec
