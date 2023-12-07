@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE CPP #-}
 
 -- | Servant client authentication.
 module Servant.Auth.Hmac.Client (
@@ -120,10 +121,12 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 
 servantRequestToPayload :: BaseUrl -> Servant.Request -> IO RequestPayload
 servantRequestToPayload url sreq = do
-    req <-
-        defaultMakeClientRequest
-            url
-            sreq
+#if MIN_VERSION_servant_client(0,20,0)
+    req <- -- servant-client 0.20: defaultMakeClientRequest :: BaseUrl -> Request -> IO Request
+#else
+    let req = -- servant-client 0.12: defaultMakeClientRequest :: BaseUrl -> Request -> Request
+#endif
+            defaultMakeClientRequest url sreq
                 { Servant.requestQueryString =
                     fromList $ sort $ toList $ Servant.requestQueryString sreq
                 }
