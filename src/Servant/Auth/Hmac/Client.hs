@@ -124,7 +124,7 @@ servantRequestToPayload url sreq = do
 #if MIN_VERSION_servant_client(0,20,0)
     req <- -- servant-client 0.20: defaultMakeClientRequest :: BaseUrl -> Request -> IO Request
 #else
-    let req = -- servant-client 0.12: defaultMakeClientRequest :: BaseUrl -> Request -> Request
+    let req = -- servant-client 0.19: defaultMakeClientRequest :: BaseUrl -> Request -> Request
 #endif
             defaultMakeClientRequest url sreq
                 { Servant.requestQueryString =
