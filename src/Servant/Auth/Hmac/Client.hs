@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE CPP #-}
 
 -- | Servant client authentication.
 module Servant.Auth.Hmac.Client (
@@ -90,7 +91,7 @@ hmacClientSign :: Servant.Request -> HmacClientM Servant.Request
 hmacClientSign req = HmacClientM $ do
     HmacSettings{..} <- ask
     url <- lift $ asks baseUrl
-    let signedRequest = signRequestHmac hmacSigner hmacSecretKey url req
+    signedRequest <- liftIO $ signRequestHmac hmacSigner hmacSecretKey url req
     case hmacRequestHook of
         Nothing -> pure ()
         Just hook -> lift $ hook signedRequest
@@ -118,9 +119,29 @@ hmacClient = Proxy @api `clientIn` Proxy @HmacClientM
 -- Internals
 ----------------------------------------------------------------------------
 
-servantRequestToPayload :: BaseUrl -> Servant.Request -> RequestPayload
-servantRequestToPayload url sreq =
-    RequestPayload
+servantRequestToPayload :: BaseUrl -> Servant.Request -> IO RequestPayload
+servantRequestToPayload url sreq = do
+#if MIN_VERSION_servant_client(0,20,0)
+    req <- -- servant-client 0.20: defaultMakeClientRequest :: BaseUrl -> Request -> IO Request
+#else
+    let req = -- servant-client 0.19: defaultMakeClientRequest :: BaseUrl -> Request -> Request
+#endif
+            defaultMakeClientRequest url sreq
+                { Servant.requestQueryString =
+                    fromList $ sort $ toList $ Servant.requestQueryString sreq
+                }
+
+    let
+        hostAndPort :: ByteString
+        hostAndPort = case lookup (mk "Host") (Client.requestHeaders req) of
+            Just hp -> hp
+            Nothing ->
+                case (Client.secure req, Client.port req) of
+                    (True, 443) -> Client.host req
+                    (False, 80) -> Client.host req
+                    (_, p) -> Client.host req <> ":" <> fromString (show p)
+
+    return RequestPayload
         { rpMethod = Client.method req
         , rpContent = "" -- toBsBody $ Client.requestBody req
         , rpHeaders =
@@ -130,24 +151,6 @@ servantRequestToPayload url sreq =
                 Client.requestHeaders req
         , rpRawUrl = hostAndPort <> Client.path req <> Client.queryString req
         }
-  where
-    req :: Client.Request
-    req =
-        defaultMakeClientRequest
-            url
-            sreq
-                { Servant.requestQueryString =
-                    fromList $ sort $ toList $ Servant.requestQueryString sreq
-                }
-
-    hostAndPort :: ByteString
-    hostAndPort = case lookup (mk "Host") (Client.requestHeaders req) of
-        Just hp -> hp
-        Nothing ->
-            case (Client.secure req, Client.port req) of
-                (True, 443) -> Client.host req
-                (False, 80) -> Client.host req
-                (_, p) -> Client.host req <> ":" <> fromString (show p)
 
 --    toBsBody :: RequestBody -> ByteString
 --    toBsBody (RequestBodyBS bs)       = bs
@@ -171,9 +174,9 @@ signRequestHmac ::
     -- | Original request
     Servant.Request ->
     -- | Signed request
-    Servant.Request
+    IO Servant.Request
 signRequestHmac signer sk url req = do
-    let payload = servantRequestToPayload url req
+    payload <- servantRequestToPayload url req
     let signature = requestSignature signer sk payload
     let authHead = (authHeaderName, "HMAC " <> unSignature signature)
-    req{Servant.requestHeaders = authHead <| Servant.requestHeaders req}
+    return req{Servant.requestHeaders = authHead <| Servant.requestHeaders req}

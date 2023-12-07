@@ -3,6 +3,10 @@
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+## 0.1.6 - Dec 7, 2023
+* Bump dependency upper bounds to allow building with GHC `9.0`, `9.2`, `9.4` and `9.6`.
+* Allow building with `servant-0.20`
+
 ## 0.1.5 - Jan 27, 2023
 * Bump dependency upper bounds, allow building with `GHC 9.0`, `9.2` and `9.4`
 
