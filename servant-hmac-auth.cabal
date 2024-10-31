@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                servant-hmac-auth
-version:             0.1.6
+version:             0.1.7
 synopsis:            Servant authentication with HMAC
 description:         Servant authentication with HMAC. See README.md for usage example.
 homepage:            https://github.com/holmusk/servant-hmac-auth
@@ -17,14 +17,16 @@ extra-doc-files:     README.md
 tested-with:         GHC == 9.0.2
                      GHC == 9.2.8
                      GHC == 9.4.8
-                     GHC == 9.6.3
+                     GHC == 9.6.6
+                     GHC == 9.8.2
+                     GHC == 9.10.1
 
 source-repository head
   type:                git
   location:            https://github.com/holmusk/servant-hmac-auth.git
 
 common common-options
-  build-depends:       base >= 4.11.1.0 && < 4.19
+  build-depends:       base >= 4.11.1.0 && < 4.21
 
   ghc-options:         -Wall
                        -Wincomplete-uni-patterns
@@ -67,9 +69,9 @@ library
                            Servant.Auth.Hmac.Server
 
   build-depends:       base64-bytestring >= 1.0 && <= 2
-                     , bytestring ^>= 0.10 || ^>= 0.11
+                     , bytestring ^>= 0.10 || ^>= 0.11 || ^>= 0.12
                      , case-insensitive ^>= 1.2
-                     , containers >= 0.5.7 && < 0.7
+                     , containers >= 0.5.7 && < 0.8
                      , cryptonite >= 0.25 && < 0.31
                      , http-types ^>= 0.12
                      , http-client >= 0.6.4 && < 0.8
@@ -98,7 +100,7 @@ test-suite servant-hmac-auth-test
                      , servant-client ^>= 0.19 || ^>= 0.20
                      , servant-server ^>= 0.19 || ^>= 0.20
                      , text
-                     , warp ^>= 3.3
+                     , warp ^>= 3.3 || ^>= 3.4
   other-modules:       Servant.Auth.Hmac.CryptoSpec
                        Servant.Auth.HmacSpec
   build-tool-depends:  hspec-discover:hspec-discover == 2.*
