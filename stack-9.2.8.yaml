@@ -1,1 +1,3 @@
 resolver: lts-20.26
+extra-deps:
+- crypton-1.0.1@sha256:f41316fbc6ad878396e476355e27b70ac35c344d74e3eefafe709e03b192be9e,14527
