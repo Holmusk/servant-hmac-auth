@@ -72,7 +72,7 @@ library
                      , bytestring ^>= 0.10 || ^>= 0.11 || ^>= 0.12
                      , case-insensitive ^>= 1.2
                      , containers >= 0.5.7 && < 0.8
-                     , cryptonite >= 0.25 && < 0.31
+                     , crypton >= 0.31 && < 2.0
                      , http-types ^>= 0.12
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.19
