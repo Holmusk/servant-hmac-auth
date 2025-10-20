@@ -23,6 +23,7 @@ jobs:
           - 9.6.6
           - 9.8.2
           - 9.10.1
+          - 9.12.1
 
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +61,8 @@ jobs:
           - stack-9.4.8.yaml
           - stack-9.6.6.yaml
           - stack-9.8.3.yaml
+          - stack-9.10.3.yaml
+          - stack-9.12.1.yaml
     steps:
       - uses: actions/checkout@v4
         if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
