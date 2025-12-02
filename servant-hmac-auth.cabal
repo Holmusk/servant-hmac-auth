@@ -1,6 +1,6 @@
 cabal-version:       2.4
 name:                servant-hmac-auth
-version:             0.1.8
+version:             0.1.9
 synopsis:            Servant authentication with HMAC
 description:         Servant authentication with HMAC. See README.md for usage example.
 homepage:            https://github.com/holmusk/servant-hmac-auth
@@ -17,10 +17,10 @@ extra-doc-files:     README.md
 tested-with:         GHC == 9.0.2
                      GHC == 9.2.8
                      GHC == 9.4.8
-                     GHC == 9.6.6
-                     GHC == 9.8.2
-                     GHC == 9.10.1
-                     GHC == 9.12.1
+                     GHC == 9.6.7
+                     GHC == 9.8.4
+                     GHC == 9.10.3
+                     GHC == 9.12.2
 
 source-repository head
   type:                git
@@ -69,11 +69,11 @@ library
                            Servant.Auth.Hmac.Client
                            Servant.Auth.Hmac.Server
 
-  build-depends:       base64-bytestring >= 1.0 && <= 2
+  build-depends:       base64-bytestring >= 1.0 && < 2
                      , bytestring ^>= 0.10 || ^>= 0.11 || ^>= 0.12
                      , case-insensitive ^>= 1.2
-                     , containers >= 0.5.7 && < 0.8
-                     , crypton >= 0.31 && < 2.0
+                     , containers >= 0.5.7 && < 0.9
+                     , crypton >= 0.31 && < 2
                      , http-types ^>= 0.12
                      , http-client >= 0.6.4 && < 0.8
                      , memory >= 0.15 && < 0.19
