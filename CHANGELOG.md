@@ -3,6 +3,9 @@
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+## 0.1.9 - Dec 2, 2025
+* Version bumps to allow building with GHC `9.12`
+
 ## 0.1.8 - Nov 8, 2024
 * Switch from cryptonite (deprecated) to crypton.
 
