@@ -3,6 +3,9 @@
 `servant-hmac-auth` uses [PVP Versioning][1].
 The change log is available [on GitHub][2].
 
+## Unreleased
+* Switch from `memory` to `ram`, as `crypton` did in 1.1, and allow `crypton` 2. This needs `crypton` 1.1 or later.
+
 ## 0.1.9 - Dec 2, 2025
 * Version bumps to allow building with GHC `9.12`
 
