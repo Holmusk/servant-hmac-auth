@@ -15,7 +15,7 @@ jobs:
         os:
           - ubuntu-latest
         cabal:
-          - '3.14.1.0'
+          - '3.16.1.0'
         ghc:
           - 9.0.2
           - 9.2.8
@@ -23,7 +23,7 @@ jobs:
           - 9.6.7
           - 9.8.4
           - 9.10.3
-          - 9.12.2
+          - 9.12.4
 
     steps:
       - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         stack:
-          - 3.7.1
+          - 3.11.1
         stack-yaml:
           - stack-9.0.2.yaml
           - stack-9.2.8.yaml
@@ -62,7 +62,7 @@ jobs:
           - stack-9.6.7.yaml
           - stack-9.8.4.yaml
           - stack-9.10.3.yaml
-          - stack-9.12.2.yaml
+          - stack-9.12.4.yaml
     steps:
       - uses: actions/checkout@v4
         if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'

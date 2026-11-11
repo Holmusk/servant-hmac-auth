@@ -1,1 +1,7 @@
-resolver: lts-24.22
+resolver: lts-24.66
+extra-deps:
+- crypton-1.1.5@sha256:792068de19ec3e75367ba52f5bb68c2b01f76182f9d38d9fcb6eccfece8f5228,15142
+- ram-0.22.1@sha256:ae1111ae126f1c89f54ff6d616d25a78db0db6e1e76e20a13d1526dc6afe37e8,2814
+flags:
+  warp:
+    x509: false
