@@ -57,9 +57,6 @@ jobs:
         stack:
           - 3.11.1
         stack-yaml:
-          - stack-9.0.2.yaml
-          - stack-9.2.8.yaml
-          - stack-9.4.8.yaml
           - stack-9.6.7.yaml
           - stack-9.8.4.yaml
           - stack-9.10.3.yaml
