@@ -1,1 +1,10 @@
 resolver: lts-23.28
+extra-deps:
+- crypton-1.1.5@sha256:792068de19ec3e75367ba52f5bb68c2b01f76182f9d38d9fcb6eccfece8f5228,15142
+- ram-0.22.1@sha256:ae1111ae126f1c89f54ff6d616d25a78db0db6e1e76e20a13d1526dc6afe37e8,2814
+- wai-app-static-3.1.9@sha256:32cd6576468a4b33d40d2772fc08273877c61ff16346b3ad389be474af1179eb,4053
+flags:
+  wai-app-static:
+    crypton: false
+  warp:
+    x509: false
